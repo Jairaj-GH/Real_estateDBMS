@@ -1,0 +1,50 @@
+# Python virtual environment
+venv/
+env/
+.venv
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Django
+db.sqlite3
+*.sqlite3
+local_settings.py
+
+# Node/Frontend
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+.vite
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS
+Thumbs.db
+
+# Test files
+*.log
+.pytest_cache/
+
+# Dependencies
+frontend/node_modules/
+backend/venv/
