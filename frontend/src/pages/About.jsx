@@ -71,118 +71,113 @@ const FEATURES = [
 
 export default function About() {
   return (
-    <div>
-      <div className="page-header">
-        <h1>ℹ️ About This Project</h1>
-        <p>Real Estate Management System – Academic Project</p>
+    <div style={{ animation: 'fadeIn 0.8s ease-out' }}>
+      <div style={{ marginBottom: 60 }}>
+        <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 900, color: '#fff', marginBottom: 12 }}>ℹ️ Project Intelligence</h1>
+        <p style={{ color: 'var(--accent)', fontSize: '1.2rem', fontWeight: 600, fontFamily: 'Instrument Serif, serif', fontStyle: 'italic' }}>Real Estate Management System – Research & Development Phase.</p>
       </div>
 
       {/* Project Overview */}
-      <div className="card" style={{ marginBottom: 24 }}>
-        <div className="card-header"><h3>🏡 Project Overview</h3></div>
-        <div className="card-body">
-          <p style={{ lineHeight: 1.8, color: 'var(--gray-600)', marginBottom: 16 }}>
-            This is a full-stack Real Estate Management System inspired by platforms like <strong>Zillow</strong>,{' '}
-            <strong>99acres</strong>, and <strong>Realtor.com</strong>. It provides a comprehensive platform for
-            real estate offices, agents, customers, and database administrators operating in Guwahati and surrounding areas.
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
-            {FEATURES.map(f => (
-              <div key={f.title} style={{ padding: 16, background: 'var(--gray-50)', borderRadius: 8, border: '1px solid var(--gray-200)' }}>
-                <div style={{ fontSize: '1.5rem', marginBottom: 8 }}>{f.icon}</div>
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>{f.title}</div>
-                <div style={{ fontSize: '.82rem', color: 'var(--gray-500)', lineHeight: 1.5 }}>{f.desc}</div>
-              </div>
-            ))}
-          </div>
+      <div className="card" style={{ marginBottom: 40, padding: 40 }}>
+        <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.8rem', marginBottom: 24, color: '#fff' }}>🏡 Executive Overview</h3>
+        <p style={{ lineHeight: 1.8, color: 'rgba(255,255,255,0.7)', marginBottom: 40, fontSize: '1.1rem' }}>
+          This is a full-stack Real Estate Management Intelligence platform focused on the Guwahati luxury market. 
+          Integrating advanced MySQL trigger logic with a modern glassy interface, it provides a seamless hub for 
+          offices, agents, and elite clientele.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 24 }}>
+          {FEATURES.map(f => (
+            <div key={f.title} style={{ padding: 24, background: 'rgba(255,255,255,0.05)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ fontSize: '2rem', marginBottom: 16 }}>{f.icon}</div>
+              <div style={{ fontWeight: 800, marginBottom: 8, color: '#fff', fontSize: '1rem', letterSpacing: '0.02em' }}>{f.title}</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>{f.desc}</div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Team */}
-      <div className="card" style={{ marginBottom: 24 }}>
-        <div className="card-header"><h3>👥 Team Contributions</h3></div>
-        <div className="card-body">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
-            {TEAM.map(member => (
-              <div key={member.name} style={{
-                border: '1px solid var(--gray-200)', borderRadius: 10, overflow: 'hidden',
-                boxShadow: 'var(--shadow-sm)',
-              }}>
-                <div style={{ padding: '20px 20px 16px', background: member.color, color: '#fff' }}>
-                  <div style={{ fontSize: '2rem', marginBottom: 8 }}>{member.icon}</div>
-                  <div style={{ fontWeight: 700, fontSize: '1rem' }}>{member.name}</div>
-                  <div style={{ fontSize: '.8rem', opacity: .85 }}>{member.role}</div>
-                </div>
-                <div style={{ padding: 16 }}>
-                  <ul style={{ paddingLeft: 16, margin: 0 }}>
-                    {member.contributions.map((c, i) => (
-                      <li key={i} style={{ fontSize: '.82rem', color: 'var(--gray-600)', marginBottom: 6, lineHeight: 1.5 }}>
-                        {c}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+      <div className="card" style={{ marginBottom: 40, padding: 40 }}>
+        <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.8rem', marginBottom: 32, color: '#fff' }}>👥 Operational Personnel</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 32 }}>
+          {TEAM.map(member => (
+            <div key={member.name} style={{
+              background: 'rgba(255,255,255,0.03)',
+              borderRadius: 24, 
+              overflow: 'hidden',
+              border: '1px solid rgba(255,255,255,0.05)',
+              transition: 'transform 0.4s ease'
+            }}>
+              <div style={{ padding: 32, background: `linear-gradient(135deg, ${member.color}88, ${member.color}22)` }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>{member.icon}</div>
+                <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#fff' }}>{member.name}</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 900, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{member.role}</div>
               </div>
-            ))}
-          </div>
+              <div style={{ padding: 24 }}>
+                <ul style={{ paddingLeft: 20, margin: 0, color: 'rgba(255,255,255,0.6)' }}>
+                  {member.contributions.map((c, i) => (
+                    <li key={i} style={{ fontSize: '0.85rem', marginBottom: 10, lineHeight: 1.5 }}>
+                      {c}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Tech Stack */}
-      <div className="card" style={{ marginBottom: 24 }}>
-        <div className="card-header"><h3>🛠️ Technology Stack</h3></div>
-        <div className="card-body">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
-            {TECH_STACK.map(t => (
-              <div key={t.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: 'var(--gray-50)', borderRadius: 8, border: '1px solid var(--gray-200)' }}>
-                <span style={{ fontSize: '1.4rem' }}>{t.icon}</span>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '.875rem' }}>{t.name}</div>
-                  <div style={{ fontSize: '.72rem', color: 'var(--gray-500)' }}>{t.desc}</div>
-                </div>
+      <div className="card" style={{ marginBottom: 40, padding: 40 }}>
+        <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.8rem', marginBottom: 32, color: '#fff' }}>🛠️ Engineering Stack</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+          {TECH_STACK.map(t => (
+            <div key={t.name} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 16, background: 'rgba(255,255,255,0.05)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)' }}>
+              <span style={{ fontSize: '1.5rem' }}>{t.icon}</span>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#fff' }}>{t.name}</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{t.desc}</div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Database Schema Summary */}
-      <div className="card">
-        <div className="card-header"><h3>🗄️ Database Schema</h3></div>
-        <div className="card-body">
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Table</th>
-                  <th>Primary Key</th>
-                  <th>Key Columns</th>
-                  <th>Relationships</th>
+      <div className="card" style={{ padding: 40 }}>
+        <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.8rem', marginBottom: 32, color: '#fff' }}>🗄️ Relational Architecture</h3>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>TABLE IDENTIFIER</th>
+                <th>PRIMARY KEY</th>
+                <th>ATTRIBUTES</th>
+                <th>RELATIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { table: 'Owner', pk: 'owner_id', cols: 'name, phone, email', rel: '1:N → Property' },
+                { table: 'Agent', pk: 'agent_id', cols: 'name, contact, email, rating', rel: '1:N → Property, Sale, Rent' },
+                { table: 'Buyer', pk: 'buyer_id', cols: 'name, phone, email', rel: '1:N → Sale' },
+                { table: 'Tenant', pk: 'tenant_id', cols: 'name, phone, email', rel: '1:N → Rent' },
+                { table: 'Property', pk: 'property_id', cols: 'address, locality, city, type, size, price, status', rel: 'N:1 → Owner, Agent' },
+                { table: 'Sale', pk: 'property_id', cols: 'sale_date, final_price, dom', rel: '1:1 → Property, N:1 → Buyer' },
+                { table: 'Rent', pk: 'id', cols: 'start_date, end_date, monthly_rent', rel: 'N:1 → Property, Tenant' },
+              ].map(row => (
+                <tr key={row.table}>
+                  <td style={{ color: '#fff', fontWeight: 800 }}>{row.table}</td>
+                  <td><code style={{ background: 'rgba(255,255,255,0.1)', color: 'var(--accent)', padding: '4px 8px', borderRadius: 6, fontSize: '.75rem' }}>{row.pk}</code></td>
+                  <td style={{ fontSize: '.8rem', color: 'rgba(255,255,255,0.6)' }}>{row.cols}</td>
+                  <td><span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--primary)', background: 'rgba(139, 92, 246, 0.1)', padding: '4px 12px', borderRadius: 99, border: '1px solid rgba(139, 92, 246, 0.2)' }}>{row.rel}</span></td>
                 </tr>
-              </thead>
-              <tbody>
-                {[
-                  { table: 'Owner', pk: 'owner_id', cols: 'name, contact, email, address', rel: '1:N → Property' },
-                  { table: 'Agent', pk: 'agent_id', cols: 'name, contact, email, rating, license_number', rel: '1:N → Property, Sale, Rent' },
-                  { table: 'Buyer', pk: 'buyer_id', cols: 'name, contact, email, budget', rel: '1:N → Sale' },
-                  { table: 'Tenant', pk: 'tenant_id', cols: 'name, contact, email, monthly_income', rel: '1:N → Rent' },
-                  { table: 'Property', pk: 'property_id', cols: 'address, locality, city, type, bedrooms, listed_price, current_status', rel: 'N:1 → Owner, Agent' },
-                  { table: 'Sale', pk: 'sale_id', cols: 'sale_date, final_price, days_on_market', rel: 'N:1 → Property, Buyer, Agent' },
-                  { table: 'Rent', pk: 'rent_id', cols: 'start_date, end_date, monthly_rent', rel: 'N:1 → Property, Tenant, Agent' },
-                ].map(row => (
-                  <tr key={row.table}>
-                    <td><strong>{row.table}</strong></td>
-                    <td><code style={{ background: 'var(--gray-100)', padding: '2px 6px', borderRadius: 4, fontSize: '.78rem' }}>{row.pk}</code></td>
-                    <td style={{ fontSize: '.8rem', color: 'var(--gray-600)' }}>{row.cols}</td>
-                    <td><span className="badge badge-blue">{row.rel}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div style={{ marginTop: 16, padding: 14, background: 'var(--primary-light)', borderRadius: 8, fontSize: '.82rem', color: 'var(--primary-dark)' }}>
-            <strong>⚡ Active Triggers:</strong> <code>update_status_after_sale_insert</code> · <code>update_status_after_sale_delete</code> · <code>prevent_overlap_rent_insert</code> · <code>update_status_after_rent_insert</code> · <code>update_status_after_rent_delete</code>
-          </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ marginTop: 32, padding: 20, background: 'rgba(139, 92, 246, 0.1)', borderRadius: 16, border: '1px solid rgba(139, 92, 246, 0.2)', fontSize: '.85rem', color: '#fff' }}>
+          <strong style={{ color: 'var(--accent)', letterSpacing: '0.05em' }}>⚡ ACTIVE TRIGGERS:</strong> <code style={{ color: 'rgba(255,255,255,0.7)' }}>status_sale_sync</code> · <code style={{ color: 'rgba(255,255,255,0.7)' }}>overlap_prevention</code> · <code style={{ color: 'rgba(255,255,255,0.7)' }}>rent_lifecycle_sync</code>
         </div>
       </div>
     </div>

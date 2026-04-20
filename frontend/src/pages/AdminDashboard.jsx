@@ -37,86 +37,65 @@ function SQLConsole() {
     }
   }
 
-  const QUICK_QUERIES = [
-    'SELECT * FROM Property LIMIT 10;',
-    'SELECT * FROM Agent;',
-    'SELECT * FROM Sale ORDER BY sale_date DESC LIMIT 10;',
-    'SELECT * FROM Rent WHERE start_date <= CURDATE() AND end_date >= CURDATE();',
-    'SELECT a.name, COUNT(s.sale_id) AS total_sales, SUM(s.final_price) AS revenue FROM Agent a LEFT JOIN Sale s ON a.agent_id = s.agent_id GROUP BY a.agent_id, a.name;',
-    'SELECT p.city, COUNT(*) AS count, AVG(p.listed_price) AS avg_price FROM Property p GROUP BY p.city;',
+  const PREDEFINED_QUERIES = [
+    { label: 'New Rented Houses (Guwahati)', query: "SELECT address, city, construction_year, current_status FROM Property WHERE city = 'Guwahati' AND construction_year > 2023 AND current_status = 'rented';" },
+    { label: 'Properties (2M - 6M)', query: "SELECT address, listed_price FROM Property WHERE city = 'Guwahati' AND listed_price BETWEEN 2000000 AND 6000000;" },
+    { label: 'Rents on G.S Road (< 15k)', query: "SELECT p.address, p.locality, p.no_of_bedroom, r.monthly_rent FROM Property p JOIN Rent r ON p.property_id = r.property_id WHERE p.city = 'Guwahati' AND p.locality = 'G.S Road' AND p.no_of_bedroom >= 2 AND r.monthly_rent < 15000;" },
+    { label: 'Top Agent (Sales 2023)', query: "SELECT a.name, SUM(s.final_price) AS total_sales_amount FROM Agent a JOIN Sale s ON a.agent_id = s.agent_id WHERE YEAR(s.sale_date) = 2023 GROUP BY a.agent_id, a.name ORDER BY total_sales_amount DESC LIMIT 1;" }
   ]
 
+  const QUICK_DIRECTIVES = [ 'SELECT * FROM Property LIMIT 10;', 'SELECT * FROM Agent;', 'SELECT * FROM Sale LIMIT 10;' ]
+
   return (
-    <div className="sql-console-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--page-padding)', animation: 'fadeIn 0.8s cubic-bezier(0.23, 1, 0.32, 1)' }}>
+    <div className="sql-console-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 32, animation: 'fadeIn 0.8s' }}>
       <div style={{ gridColumn: 'span 1' }}>
-        <div className="card" style={{ marginBottom: 32, border: 'none', background: '#1c1917', borderRadius: 24, overflow: 'hidden' }}>
-          <div className="card-header" style={{ background: '#262626', padding: '24px clamp(24px, 4vw, 32px)', border: 'none', flexWrap: 'wrap', gap: 16 }}>
-            <h3 style={{ color: 'var(--peach)', display: 'flex', alignItems: 'center', gap: 12, margin: 0, fontFamily: 'Instrument Serif, serif', fontSize: '1.5rem', fontStyle: 'italic' }}>
-              <span style={{ opacity: 0.7 }}>$</span> Terminal Engine
-            </h3>
+        <div className="card" style={{ marginBottom: 32, background: 'rgba(15, 23, 42, 0.8)', padding: 0 }}>
+          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            <h3 style={{ color: 'var(--accent)', fontFamily: 'Instrument Serif, serif', fontSize: '1.5rem', fontStyle: 'italic' }}>Terminal Engine</h3>
             <div style={{ display: 'flex', gap: 12 }}>
-              <button className="btn" style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.05)', color: '#a8a29e', border: 'none', borderRadius: 12, fontWeight: 800, fontSize: '0.7rem' }} onClick={() => setQuery('')}>CLEAR</button>
-              <button className="btn" style={{ padding: '10px 20px', background: 'var(--peach)', color: '#1c1917', border: 'none', borderRadius: 12, fontWeight: 900, fontSize: '0.7rem' }} onClick={runQuery} disabled={loading}>
+              <button className="btn" style={{ padding: '8px 16px', fontSize: '0.65rem' }} onClick={() => setQuery('')}>CLEAR</button>
+              <button className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.65rem' }} onClick={runQuery} disabled={loading}>
                 {loading ? 'EXECUTING…' : 'RUN QUERY'}
               </button>
             </div>
           </div>
-          <div style={{ padding: 'clamp(20px, 4vw, 32px)' }}>
+          <div style={{ padding: 32 }}>
             <textarea
-              className="sql-textarea"
-              style={{ background: 'transparent', color: '#e7e5e4', border: 'none', fontFamily: 'monospace', fontSize: '1rem', width: '100%', height: 200, resize: 'none', outline: 'none' }}
+              style={{ background: 'transparent', color: '#fff', border: 'none', fontFamily: 'monospace', fontSize: '1rem', width: '100%', height: 200, resize: 'none', outline: 'none' }}
               value={query}
               onChange={e => setQuery(e.target.value)}
-              onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runQuery() }}
               placeholder="Enter SQL command sequence..."
               spellCheck={false}
             />
-            <div style={{ fontSize: '.65rem', color: '#57534e', marginTop: 24, fontWeight: 800, letterSpacing: '0.1em' }}>
-              CMD + ENTER TO EXECUTE · DESTRUCTIVE OPERATIONS REQUIRE AUTHORIZATION
-            </div>
           </div>
         </div>
 
         {result && (
-          <div className="card" style={{ border: 'none', background: '#fff', borderRadius: 24, overflow: 'hidden' }}>
-            <div className="card-header" style={{ padding: '24px clamp(24px, 4vw, 32px)', background: '#fcfaf7' }}>
-              <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.25rem', margin: 0 }}>
-                {result.error ? '⚠️ Execution Interrupted' : result.type === 'select' ? `Dataset: ${result.row_count} Entries` : 'Command Successful'}
+          <div className="card" style={{ padding: 0 }}>
+            <div style={{ padding: '24px 32px', background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <h3 style={{ fontSize: '1rem', color: '#fff' }}>
+                {result.error ? '⚠️ Execution Interrupted' : `Dataset Output (${result.row_count || 0} rows)`}
               </h3>
             </div>
-            <div style={{ padding: result.error ? 'clamp(20px, 4vw, 32px)' : 0 }}>
+            <div style={{ padding: result.error ? 32 : 0 }}>
               {result.error ? (
-                <div style={{ background: '#fef2f2', color: '#991b1b', padding: 24, borderRadius: 16, fontFamily: 'monospace', fontSize: '.9rem', border: '1px solid #fee2e2' }}>
+                <div style={{ background: 'rgba(220, 38, 38, 0.1)', color: '#f87171', padding: 24, borderRadius: 16, fontFamily: 'monospace', fontSize: '.9rem', border: '1px solid rgba(220, 38, 38, 0.2)' }}>
                   {result.error}
                 </div>
-              ) : result.type === 'select' ? (
-                result.row_count === 0 ? (
-                  <div style={{ padding: 60, textAlign: 'center' }}>
-                    <p style={{ fontFamily: 'Instrument Serif, serif', fontStyle: 'italic', fontSize: '1.2rem', color: '#78350f' }}>Query returned an empty set.</p>
-                  </div>
-                ) : (
-                  <div className="table-wrap" style={{ maxHeight: 500, overflowY: 'auto' }}>
-                    <table>
-                      <thead>
-                        <tr style={{ background: '#fcfaf7' }}>{result.columns.map(c => <th key={c} style={{ fontSize: '0.65rem', fontWeight: 900, color: '#a8a29e', letterSpacing: '0.1em' }}>{c.toUpperCase()}</th>)}</tr>
-                      </thead>
-                      <tbody>
-                        {result.rows.map((row, i) => (
-                          <tr key={i} style={{ borderBottom: '1px solid #fcfaf7' }}>
-                            {row.map((cell, j) => (
-                              <td key={j} style={{ fontFamily: 'monospace', fontSize: '.85rem', color: '#1c1917', padding: '16px 24px' }}>
-                                {cell === null ? <span style={{ color: '#d6d3d1' }}>NULL</span> : String(cell)}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )
               ) : (
-                <div style={{ margin: 32, padding: 24, background: '#f0fdf4', color: '#166534', borderRadius: 16, fontWeight: 800, border: '1px solid #dcfce7' }}>
-                  {result.message}
+                <div className="table-wrap" style={{ maxHeight: 500, overflowY: 'auto' }}>
+                  <table>
+                    <thead>
+                      <tr>{result.columns?.map(c => <th key={c}>{c.toUpperCase()}</th>)}</tr>
+                    </thead>
+                    <tbody>
+                      {result.rows?.map((row, i) => (
+                        <tr key={i}>
+                          {row.map((cell, j) => <td key={j} style={{ fontFamily: 'monospace', fontSize: '.85rem', color: 'rgba(255,255,255,0.8)' }}>{cell === null ? 'NULL' : String(cell)}</td>)}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
@@ -125,51 +104,30 @@ function SQLConsole() {
       </div>
 
       <div style={{ gridColumn: 'span 1' }}>
-        <div className="card" style={{ marginBottom: 24, borderRadius: 24, border: 'none' }}>
-          <div className="card-header" style={{ padding: '24px 32px' }}>
-            <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', margin: 0 }}>Quick Directives</h3>
+        <div className="card" style={{ marginBottom: 24, padding: 0 }}>
+          <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            <h3 style={{ fontSize: '1.1rem', color: '#fff' }}>Predefined Analysis</h3>
           </div>
-          <div style={{ padding: '12px 0' }}>
-            {QUICK_QUERIES.map((q, i) => (
-              <button
-                key={i}
-                onClick={() => setQuery(q)}
-                style={{
-                  display: 'block', width: '100%', textAlign: 'left', padding: '16px 32px',
-                  border: 'none', background: 'none', cursor: 'pointer', fontSize: '.7rem',
-                  color: '#57534e', borderBottom: '1px solid #fcfaf7',
-                  fontFamily: 'monospace', lineHeight: 1.5,
-                  transition: 'all .2s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#fcfaf7'; e.currentTarget.style.color = '#1c1917'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#57534e'; }}
-              >
-                {q.length > 50 ? q.slice(0, 50) + '…' : q}
-              </button>
-            ))}
-          </div>
+          {PREDEFINED_QUERIES.map((q, i) => (
+            <button key={i} className="nav-link" style={{ width: '100%', border: 'none', background: 'none', margin: 0, borderRadius: 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }} onClick={() => setQuery(q.query)}>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontSize: '0.6rem', color: 'var(--accent)', fontWeight: 900 }}>QUERY {i+1}</div>
+                <div style={{ fontSize: '0.8rem', color: '#fff' }}>{q.label}</div>
+              </div>
+            </button>
+          ))}
         </div>
 
         {history.length > 0 && (
-          <div className="card" style={{ borderRadius: 24, border: 'none' }}>
-            <div className="card-header" style={{ padding: '24px 32px' }}>
-               <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', margin: 0 }}>Execution Log</h3>
+          <div className="card" style={{ padding: 0 }}>
+             <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <h3 style={{ fontSize: '1.1rem', color: '#fff' }}>Execution Log</h3>
             </div>
-            <div style={{ padding: '12px 0', maxHeight: 350, overflowY: 'auto' }} ref={histRef}>
+            <div style={{ padding: '12px 0', maxHeight: 300, overflowY: 'auto' }}>
               {history.map((h, i) => (
-                <button
-                  key={i}
-                  onClick={() => setQuery(h.query)}
-                  style={{
-                    display: 'block', width: '100%', textAlign: 'left', padding: '16px 32px',
-                    border: 'none', background: 'none', cursor: 'pointer',
-                    borderBottom: '1px solid #fcfaf7',
-                  }}
-                >
-                  <div style={{ fontSize: '.6rem', color: '#a8a29e', fontWeight: 900, marginBottom: 4 }}>{h.ts}</div>
-                  <div style={{ fontSize: '.7rem', color: '#57534e', fontFamily: 'monospace', lineHeight: 1.4 }}>
-                    {h.query.length > 40 ? h.query.slice(0, 40) + '…' : h.query}
-                  </div>
+                <button key={i} onClick={() => setQuery(h.query)} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '16px 32px', border: 'none', background: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ fontSize: '.6rem', color: 'var(--text-muted)' }}>{h.ts}</div>
+                  <div style={{ fontSize: '.7rem', color: 'rgba(255,255,255,0.7)', fontFamily: 'monospace' }}>{h.query.slice(0, 40)}…</div>
                 </button>
               ))}
             </div>
@@ -183,35 +141,29 @@ function SQLConsole() {
 // ─── Database Stats ──────────────────────────────────────────────────────────
 function DBStats() {
   const [stats, setStats] = useState(null)
+  useEffect(() => { api.get('/admin/stats/').then(r => setStats(r.data)) }, [])
 
-  useEffect(() => {
-    api.get('/admin/stats/').then(r => setStats(r.data))
-  }, [])
-
-  if (!stats) return <div style={{ padding: 100, textAlign: 'center' }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
+  if (!stats) return <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" /></div>
 
   const cards = [
-    { icon: '🏡', label: 'TOTAL ESTATES', value: fmt(stats.total_properties), color: '#1c1917' },
-    { icon: '✅', label: 'AVAILABLE ASSETS', value: fmt(stats.available_properties), color: '#3a5a40' },
-    { icon: '💰', label: 'TRANSACTIONAL REVENUE', value: fmtCur(stats.total_sales_revenue), color: '#78350f', wide: true },
-    { icon: '🤝', label: 'AUTHORIZED AGENTS', value: fmt(stats.total_agents), color: '#1c1917' },
-    { icon: '👤', label: 'REGISTERED OWNERS', value: fmt(stats.total_owners), color: '#1c1917' },
-    { icon: '🛒', label: 'ELITE BUYERS', value: fmt(stats.total_buyers), color: '#1c1917' },
-    { icon: '🏘️', label: 'MANAGED TENANTS', value: fmt(stats.total_tenants), color: '#1c1917' },
-    { icon: '🟢', label: 'ACTIVE CHARTERS', value: fmt(stats.active_rents), color: '#3a5a40' },
+    { icon: '🏡', label: 'TOTAL ESTATES', value: fmt(stats.total_properties) },
+    { icon: '✅', label: 'AVAILABLE ASSETS', value: fmt(stats.available_properties) },
+    { icon: '💰', label: 'TOTAL REVENUE', value: fmtCur(stats.total_sales_revenue), wide: true },
+    { icon: '🤝', label: 'ACTIVE AGENTS', value: fmt(stats.total_agents) },
+    { icon: '👤', label: 'OWNERS', value: fmt(stats.total_owners) },
+    { icon: '🛒', label: 'BUYERS', value: fmt(stats.total_buyers) },
+    { icon: '🟢', label: 'ACTIVE RENTS', value: fmt(stats.active_rents) },
   ]
 
   return (
-    <div style={{ animation: 'fadeIn 0.8s cubic-bezier(0.23, 1, 0.32, 1)' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: 'clamp(16px, 3vw, 32px)' }}>
-        {cards.map(c => (
-          <div key={c.label} className="stat-card" style={{ background: c.wide ? '#1c1917' : '#fff', color: c.wide ? '#fff' : '#1c1917', border: 'none', padding: 'clamp(24px, 5vw, 40px)', borderRadius: 24 }}>
-            <div style={{ fontSize: '0.6rem', fontWeight: 900, color: c.wide ? '#a8a29e' : '#78350f', letterSpacing: '0.2em', marginBottom: 16 }}>{c.label}</div>
-            <div className="stat-value" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', fontFamily: 'Instrument Serif, serif', fontStyle: 'italic' }}>{c.value}</div>
-            <div style={{ marginTop: 20, fontSize: '0.75rem', color: c.wide ? 'var(--peach)' : '#3a5a40', fontWeight: 800 }}>{c.icon} Intelligence Verified</div>
-          </div>
-        ))}
-      </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 32, animation: 'fadeIn 0.8s' }}>
+      {cards.map(c => (
+        <div key={c.label} className="card" style={{ padding: 40, background: c.wide ? 'rgba(139, 92, 246, 0.15)' : 'rgba(255,255,255,0.1)' }}>
+          <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--accent)', letterSpacing: '0.2em', marginBottom: 16 }}>{c.label}</div>
+          <div style={{ fontSize: '2.5rem', fontWeight: 900, fontFamily: 'Instrument Serif, serif', fontStyle: 'italic', color: '#fff' }}>{c.value}</div>
+          <div style={{ marginTop: 20, fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', fontWeight: 800 }}>{c.icon} SECURE ASSET</div>
+        </div>
+      ))}
     </div>
   )
 }
@@ -223,33 +175,106 @@ function TableBrowser() {
   const [data, setData] = useState(null)
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     setLoading(true)
+    setError(null)
     api.get(`/admin/tables/${table}/`, { params: { page } })
       .then(r => setData(r.data))
+      .catch(err => {
+        console.error('Table Fetch Error:', err)
+        setError(err.response?.data?.error || 'Failed to connect to the database. Ensure the backend is running.')
+      })
       .finally(() => setLoading(false))
   }, [table, page])
 
-  const changeTable = t => { setTable(t); setPage(1); setData(null) }
+  const changeTable = t => { 
+    setTable(t)
+    setPage(1)
+    setData(null)
+    setError(null)
+  }
+
+  const renderContent = () => {
+    if (loading) return (
+      <div style={{ height: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+        <div className="spinner" />
+        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Retrieving {table} Registry...</span>
+      </div>
+    )
+
+    if (error) return (
+      <div style={{ padding: 60, textAlign: 'center', background: 'rgba(220, 38, 38, 0.05)', borderRadius: 24, border: '1px solid rgba(220, 38, 38, 0.1)' }}>
+        <div style={{ fontSize: '3rem', marginBottom: 16 }}>⚠️</div>
+        <h3 style={{ color: '#fff', marginBottom: 8 }}>Registry Access Failed</h3>
+        <p style={{ color: 'var(--text-muted)', maxWidth: 400, margin: '0 auto' }}>{error}</p>
+        <button className="btn btn-primary" style={{ marginTop: 24 }} onClick={() => changeTable(table)}>RETRY CONNECTION</button>
+      </div>
+    )
+
+    if (!data || !data.results || data.results.length === 0) return (
+      <div style={{ padding: 60, textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: 24, border: '1px solid var(--glass-border)' }}>
+        <div style={{ fontSize: '3rem', marginBottom: 16 }}>📁</div>
+        <h3 style={{ color: '#fff', marginBottom: 8 }}>Empty Registry</h3>
+        <p style={{ color: 'var(--text-muted)' }}>No records found for {table} in the current database view.</p>
+      </div>
+    )
+
+    const columns = Object.keys(data.results[0])
+
+    return (
+      <div className="card" style={{ padding: 0, animation: 'fadeIn 0.5s' }}>
+        <div style={{ padding: '24px 32px', background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ color: '#fff', fontSize: '1.2rem', fontFamily: 'Instrument Serif, serif', fontStyle: 'italic' }}>{data.table} Master Registry</h3>
+            <div style={{ fontSize: '0.65rem', color: 'var(--accent)', fontWeight: 900, marginTop: 4 }}>DATABASE DIRECTORY ACCESS COMPLETE</div>
+          </div>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 800 }}>
+            PAGE {page} <span style={{ opacity: 0.3 }}>/</span> {Math.ceil(data.total/data.page_size) || 1}
+          </span>
+        </div>
+        <div className="table-wrap" style={{ overflowX: 'auto' }}>
+          <table>
+            <thead>
+              <tr>{columns.map(col => <th key={col}>{col.replace(/_/g, ' ')}</th>)}</tr>
+            </thead>
+            <tbody>
+              {data.results.map((row, i) => (
+                <tr key={i}>
+                  {columns.map((col, j) => {
+                    const val = row[col]
+                    return (
+                      <td key={j} style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.8rem' }}>
+                        {val === null || val === undefined ? <span style={{ opacity: 0.3 }}>—</span> : String(val)}
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ padding: 32, display: 'flex', justifyContent: 'center', gap: 24, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <button className="btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>PREVIOUS</button>
+          <button className="btn" disabled={page >= Math.ceil(data.total/data.page_size)} onClick={() => setPage(p => p + 1)}>NEXT</button>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div style={{ animation: 'fadeIn 0.8s cubic-bezier(0.23, 1, 0.32, 1)' }}>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 32 }}>
+    <div style={{ animation: 'fadeIn 0.8s' }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 40 }}>
         {TABLES.map(t => (
-          <button
-            key={t}
-            className="btn"
+          <button key={t} 
+            className="btn glass-btn" 
             style={{ 
-              padding: '10px 20px', 
-              borderRadius: 99, 
-              border: 'none', 
-              background: table === t ? '#1c1917' : 'rgba(255,255,255,0.6)', 
-              color: table === t ? 'var(--peach)' : '#57534e',
-              fontWeight: 800,
-              fontSize: '0.7rem',
-              letterSpacing: '0.05em'
-            }}
+              background: table === t ? 'rgba(255,255,255,0.15)' : 'transparent', 
+              borderColor: table === t ? 'var(--accent)' : 'var(--glass-border)',
+              color: table === t ? '#fff' : 'var(--text-muted)',
+              minWidth: 120
+            }} 
             onClick={() => changeTable(t)}
           >
             {t.toUpperCase()}
@@ -257,50 +282,9 @@ function TableBrowser() {
         ))}
       </div>
 
-      {loading ? (
-        <div style={{ padding: 100, textAlign: 'center' }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
-      ) : data ? (
-        <div className="card" style={{ border: 'none', background: '#fff', borderRadius: 32, overflow: 'hidden' }}>
-          <div className="card-header" style={{ padding: '24px clamp(24px, 5vw, 48px)', background: '#fcfaf7', flexWrap: 'wrap', gap: 16 }}>
-            <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.25rem', margin: 0 }}>
-              {data.table} Registry
-              <span style={{ marginLeft: 16, fontSize: '0.6rem', fontWeight: 900, background: '#1c1917', color: 'var(--peach)', padding: '4px 10px', borderRadius: 99 }}>{data.total} RECORDS</span>
-            </h3>
-            <span style={{ fontSize: '.75rem', color: '#a8a29e', fontWeight: 800 }}>Portfolio Page {data.page} of {Math.ceil(data.total / data.page_size)}</span>
-          </div>
-          <div className="table-wrap">
-            {data.results.length === 0 ? (
-              <div style={{ padding: 80, textAlign: 'center' }}><p style={{ fontFamily: 'Instrument Serif, serif', fontStyle: 'italic', fontSize: '1.2rem' }}>No entries found in this registry.</p></div>
-            ) : (
-              <table>
-                <thead>
-                  <tr style={{ background: '#fcfaf7' }}>
-                    {Object.keys(data.results[0]).map(col => <th key={col} style={{ fontSize: '0.6rem', fontWeight: 900, color: '#a8a29e', letterSpacing: '0.1em' }}>{col.toUpperCase()}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.results.map((row, i) => (
-                    <tr key={i} style={{ borderBottom: '1px solid #fcfaf7' }}>
-                      {Object.values(row).map((val, j) => (
-                        <td key={j} style={{ padding: '16px 24px', color: '#1c1917', fontWeight: 600, fontSize: '0.8rem' }}>
-                          {val === null || val === undefined ? <span style={{ color: '#d6d3d1' }}>—</span> : String(val)}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-          {Math.ceil(data.total / data.page_size) > 1 && (
-            <div className="pagination" style={{ padding: '24px clamp(24px, 5vw, 48px)', borderTop: '1px solid #fcfaf7', justifyContent: 'center', gap: 24 }}>
-              <button className="btn" style={{ padding: '8px 16px', background: '#fcfaf7', color: '#1c1917', border: 'none', borderRadius: 12, fontWeight: 800, fontSize: '0.7rem' }} disabled={page === 1} onClick={() => setPage(p => p - 1)}>PREVIOUS</button>
-              <span style={{ fontWeight: 900, fontSize: '0.7rem', color: '#a8a29e' }}>{page} / {Math.ceil(data.total / data.page_size)}</span>
-              <button className="btn" style={{ padding: '8px 16px', background: '#fcfaf7', color: '#1c1917', border: 'none', borderRadius: 12, fontWeight: 800, fontSize: '0.7rem' }} disabled={page >= Math.ceil(data.total / data.page_size)} onClick={() => setPage(p => p + 1)}>NEXT</button>
-            </div>
-          )}
-        </div>
-      ) : null}
+      <div className="table-content-render-area">
+        {renderContent()}
+      </div>
     </div>
   )
 }
@@ -310,208 +294,76 @@ function UserManagement() {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ email: '', password: '', first_name: '', last_name: '', role: 'customer', agent_id: '' })
+  const [form, setForm] = useState({ email: '', password: '', role: 'customer' })
   const [msg, setMsg] = useState(null)
 
-  const fetchUsers = () => {
-    setLoading(true)
-    api.get('/admin/users/').then(r => { setUsers(r.data); setLoading(false) })
-  }
-
+  const fetchUsers = () => { api.get('/admin/users/').then(r => { setUsers(r.data); setLoading(false) }) }
   useEffect(() => { fetchUsers() }, [])
 
-  const setF = (k, v) => setForm(f => ({ ...f, [k]: v }))
-
-  const createUser = async e => {
-    e.preventDefault()
-    try {
-      await api.post('/admin/users/', form)
-      setMsg({ type: 'success', text: `Identity confirmed. User ${form.email} added to systems.` })
-      setShowForm(false)
-      setForm({ email: '', password: '', first_name: '', last_name: '', role: 'customer', agent_id: '' })
-      fetchUsers()
-    } catch (err) {
-      setMsg({ type: 'error', text: err.response?.data?.error || 'Authorization failed. Creation rejected.' })
-    }
-  }
-
-  const toggleActive = async (userId, isActive) => {
-    await api.patch(`/admin/users/${userId}/`, { is_active: !isActive })
-    fetchUsers()
-  }
-
-  const deleteUser = async userId => {
-    if (!window.confirm('Terminate this identity? This action is irreversible.')) return
-    await api.delete(`/admin/users/${userId}/`)
-    fetchUsers()
-  }
-
-  const changeRole = async (userId, role) => {
-    await api.patch(`/admin/users/${userId}/`, { role })
-    fetchUsers()
-  }
-
   return (
-    <div style={{ animation: 'fadeIn 0.8s cubic-bezier(0.23, 1, 0.32, 1)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40, flexWrap: 'wrap', gap: 24 }}>
-        <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', fontWeight: 900, margin: 0 }}>Personnel Directory</h2>
-        <button className="btn" style={{ padding: '12px 24px', background: '#1c1917', color: 'var(--peach)', border: 'none', borderRadius: 12, fontWeight: 900, fontSize: '0.7rem' }} onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'CANCEL OPERATION' : 'AUTHORIZE NEW USER'}
-        </button>
+    <div style={{ animation: 'fadeIn 0.8s' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 40 }}>
+        <h2 style={{ color: '#fff' }}>Personnel Directory</h2>
+        <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>{showForm ? 'CANCEL' : 'AUTHORIZE USER'}</button>
       </div>
 
-      {msg && <div className={`alert alert-${msg.type === 'success' ? 'success' : 'error'}`} style={{ marginBottom: 32, borderRadius: 16 }}>{msg.text}</div>}
-
       {showForm && (
-        <div className="card" style={{ marginBottom: 40, border: 'none', background: '#fff', padding: 'clamp(24px, 5vw, 48px)', borderRadius: 32 }}>
-          <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.5rem', marginBottom: 32 }}>Security Credentials</h3>
-          <form onSubmit={createUser} style={{ display: 'grid', gap: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24 }}>
-              <div className="form-group">
-                <label style={{ fontSize: '0.6rem', fontWeight: 900, color: '#78350f', letterSpacing: '0.1em', marginBottom: 12, display: 'block' }}>GIVEN NAME</label>
-                <input className="form-control" style={{ border: 'none', background: '#fcfaf7', height: 60, borderRadius: 12 }} value={form.first_name} onChange={e => setF('first_name', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label style={{ fontSize: '0.6rem', fontWeight: 900, color: '#78350f', letterSpacing: '0.1em', marginBottom: 12, display: 'block' }}>FAMILY NAME</label>
-                <input className="form-control" style={{ border: 'none', background: '#fcfaf7', height: 60, borderRadius: 12 }} value={form.last_name} onChange={e => setF('last_name', e.target.value)} />
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24 }}>
-              <div className="form-group">
-                <label style={{ fontSize: '0.6rem', fontWeight: 900, color: '#78350f', letterSpacing: '0.1em', marginBottom: 12, display: 'block' }}>EMAIL ADDRESS *</label>
-                <input type="email" className="form-control" style={{ border: 'none', background: '#fcfaf7', height: 60, borderRadius: 12 }} required value={form.email} onChange={e => setF('email', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label style={{ fontSize: '0.6rem', fontWeight: 900, color: '#78350f', letterSpacing: '0.1em', marginBottom: 12, display: 'block' }}>ACCESS CIPHER *</label>
-                <input type="password" className="form-control" style={{ border: 'none', background: '#fcfaf7', height: 60, borderRadius: 12 }} required value={form.password} onChange={e => setF('password', e.target.value)} />
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24 }}>
-              <div className="form-group">
-                <label style={{ fontSize: '0.6rem', fontWeight: 900, color: '#78350f', letterSpacing: '0.1em', marginBottom: 12, display: 'block' }}>ASSIGNED ROLE *</label>
-                <select className="form-control" style={{ border: 'none', background: '#fcfaf7', height: 60, borderRadius: 12 }} value={form.role} onChange={e => setF('role', e.target.value)}>
-                  <option value="customer">Customer</option>
-                  <option value="agent">Professional Agent</option>
-                  <option value="office">Executive Office</option>
-                  <option value="admin">System Administrator</option>
-                </select>
-              </div>
-              {form.role === 'agent' && (
-                <div className="form-group">
-                  <label style={{ fontSize: '0.6rem', fontWeight: 900, color: '#78350f', letterSpacing: '0.1em', marginBottom: 12, display: 'block' }}>AGENT LINKAGE ID</label>
-                  <input type="number" className="form-control" style={{ border: 'none', background: '#fcfaf7', height: 60, borderRadius: 12 }} value={form.agent_id} onChange={e => setF('agent_id', e.target.value)} placeholder="0" />
-                </div>
-              )}
-            </div>
-            <button type="submit" className="btn btn-primary" style={{ height: 64, marginTop: 16 }}>Confirm Identity Creation</button>
+        <div className="card" style={{ marginBottom: 40, padding: 40 }}>
+          <form style={{ display: 'grid', gap: 24 }} onSubmit={async e => {
+            e.preventDefault()
+            try { await api.post('/admin/users/', form); fetchUsers(); setShowForm(false); setMsg({ type: 'success', text: 'User authorized.' }) }
+            catch (e) { setMsg({ type: 'error', text: 'Authorization failed.' }) }
+          }}>
+            <input className="form-control" placeholder="Email" style={{ height: 60 }} value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
+            <input className="form-control" type="password" placeholder="Password" style={{ height: 60 }} value={form.password} onChange={e => setForm({...form, password: e.target.value})} />
+            <select className="form-control" style={{ height: 60 }} value={form.role} onChange={e => setForm({...form, role: e.target.value})}>
+              <option value="customer">Customer</option>
+              <option value="agent">Agent</option>
+              <option value="office">Executive</option>
+              <option value="admin">Admin</option>
+            </select>
+            <button className="btn btn-primary" style={{ height: 60 }}>Confirm Registration</button>
           </form>
         </div>
       )}
 
-      {loading ? <div style={{ padding: 100, textAlign: 'center' }}><div className="spinner" style={{ margin: '0 auto' }} /></div> : (
-        <div className="card" style={{ border: 'none', background: '#fff', borderRadius: 32, overflow: 'hidden' }}>
-          <div className="card-header" style={{ padding: '24px clamp(24px, 5vw, 48px)', background: '#fcfaf7' }}>
-            <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.25rem', margin: 0 }}>Registry of Personnel <span style={{ marginLeft: 16, fontSize: '0.6rem', fontWeight: 900, background: '#1c1917', color: 'var(--peach)', padding: '4px 10px', borderRadius: 99 }}>{users.length} IDENTITIES</span></h3>
-          </div>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr style={{ background: '#fcfaf7' }}>
-                  <th style={{ fontSize: '0.6rem', fontWeight: 900, color: '#a8a29e', letterSpacing: '0.1em' }}>IDENTITY</th>
-                  <th style={{ fontSize: '0.6rem', fontWeight: 900, color: '#a8a29e', letterSpacing: '0.1em' }}>COMMUNICATION</th>
-                  <th style={{ fontSize: '0.6rem', fontWeight: 900, color: '#a8a29e', letterSpacing: '0.1em' }}>CLEARANCE</th>
-                  <th style={{ fontSize: '0.6rem', fontWeight: 900, color: '#a8a29e', letterSpacing: '0.1em' }}>STATUS</th>
-                  <th style={{ fontSize: '0.6rem', fontWeight: 900, color: '#a8a29e', letterSpacing: '0.1em' }}>ACTIONS</th>
+      <div className="card" style={{ padding: 0 }}>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr><th>IDENTITY</th><th>COMMUNICATION</th><th>CLEARANCE</th><th>STATUS</th></tr>
+            </thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.id}>
+                  <td style={{ color: '#fff', fontWeight: 700 }}>{u.full_name || 'Anonymous'}</td>
+                  <td style={{ color: 'var(--text-muted)' }}>{u.email}</td>
+                  <td><span style={{ fontSize: '0.7rem', padding: '4px 12px', background: 'rgba(255,255,255,0.1)', borderRadius: 99 }}>{u.role.toUpperCase()}</span></td>
+                  <td><span style={{ color: u.is_active ? '#4ade80' : '#f87171' }}>{u.is_active ? 'ACTIVE' : 'SUSPENDED'}</span></td>
                 </tr>
-              </thead>
-              <tbody>
-                {users.map(u => (
-                  <tr key={u.id} style={{ borderBottom: '1px solid #fcfaf7' }}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#1c1917', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.9rem', color: 'var(--peach)', fontFamily: 'Instrument Serif, serif', flexShrink: 0 }}>
-                          {(u.full_name || u.email)[0].toUpperCase()}
-                        </div>
-                        <span style={{ fontWeight: 800, color: '#1c1917', fontSize: '0.85rem' }}>{u.full_name || 'Anonymous Identity'}</span>
-                      </div>
-                    </td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '.8rem', color: '#57534e' }}>{u.email}</td>
-                    <td>
-                      <select
-                        className="form-control"
-                        style={{ border: 'none', background: '#fcfaf7', padding: '6px 12px', borderRadius: 8, fontSize: '.7rem', fontWeight: 800, width: 'auto' }}
-                        value={u.role}
-                        onChange={e => changeRole(u.id, e.target.value)}
-                      >
-                        <option value="customer">Customer</option>
-                        <option value="agent">Agent</option>
-                        <option value="office">Executive</option>
-                        <option value="admin">Admin</option>
-                      </select>
-                    </td>
-                    <td>
-                      <span style={{ 
-                        padding: '4px 12px', 
-                        borderRadius: 99, 
-                        fontSize: '0.6rem', 
-                        fontWeight: 900, 
-                        letterSpacing: '0.05em',
-                        background: u.is_active ? 'rgba(58, 90, 64, 0.1)' : 'rgba(153, 27, 27, 0.1)',
-                        color: u.is_active ? '#3a5a40' : '#991b1b'
-                      }}>
-                        {u.is_active ? 'VERIFIED' : 'SUSPENDED'}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button className="btn" style={{ background: 'none', color: '#1c1917', fontWeight: 800, fontSize: '0.65rem', padding: 4 }} onClick={() => toggleActive(u.id, u.is_active)}>
-                          {u.is_active ? 'SUSPEND' : 'RESTORE'}
-                        </button>
-                        <button className="btn" style={{ background: 'none', color: '#991b1b', fontWeight: 800, fontSize: '0.65rem', padding: 4 }} onClick={() => deleteUser(u.id)}>TERMINATE</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
     </div>
   )
 }
 
-// ─── Admin Dashboard Main ─────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const location = useLocation()
   const path = location.pathname
 
-  // Determine active component based on path
   let activeComponent = <DBStats />
   let pageTitle = 'System Intelligence'
-  let pageSubtitle = 'Comprehensive governance console for Guwahati elite assets.'
 
-  if (path.includes('/sql')) {
-    activeComponent = <SQLConsole />
-    pageTitle = 'Engine Control'
-    pageSubtitle = 'Direct interface for core database operations.'
-  } else if (path.includes('/users')) {
-    activeComponent = <UserManagement />
-    pageTitle = 'Access Governance'
-    pageSubtitle = 'Personnel directory and identity management protocols.'
-  } else if (path.includes('/tables')) {
-    activeComponent = <TableBrowser />
-    pageTitle = 'Estate Registries'
-    pageSubtitle = 'Detailed inspection of system database structures.'
-  }
+  if (path.includes('/sql')) { activeComponent = <SQLConsole />; pageTitle = 'Engine Control' }
+  else if (path.includes('/users')) { activeComponent = <UserManagement />; pageTitle = 'Access Governance' }
+  else if (path.includes('/tables')) { activeComponent = <TableBrowser />; pageTitle = 'Estate Registries' }
 
   return (
-    <div style={{ animation: 'fadeIn 0.8s cubic-bezier(0.23, 1, 0.32, 1)' }}>
+    <div style={{ animation: 'fadeIn 0.8s' }}>
       <div style={{ marginBottom: 40 }}>
-        <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 900, color: '#1c1917', marginBottom: 8, letterSpacing: '-0.02em' }}>
-           {pageTitle}
-        </h1>
-        <p style={{ color: '#78350f', fontSize: 'clamp(1rem, 2.5vw, 1.25rem)', fontWeight: 600, fontFamily: 'Instrument Serif, serif', fontStyle: 'italic' }}>{pageSubtitle}</p>
       </div>
 
       <div className="admin-content-area">

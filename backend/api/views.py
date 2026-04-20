@@ -54,7 +54,7 @@ class PropertyListView(generics.ListAPIView):
         if max_price:
             qs = qs.filter(listed_price__lte=max_price)
         if bedrooms:
-            qs = qs.filter(bedrooms=bedrooms)
+            qs = qs.filter(no_of_bedroom=bedrooms)
         if search:
             qs = qs.filter(
                 Q(address__icontains=search) |
@@ -78,7 +78,7 @@ class PropertyMetaView(APIView):
     def get(self, request):
         cities = list(Property.objects.values_list('city', flat=True).distinct().order_by('city'))
         localities = list(Property.objects.values_list('locality', flat=True).distinct().order_by('locality'))
-        types = list(Property.objects.values_list('property_type', flat=True).distinct().order_by('property_type'))
+        types = list(Property.objects.values_list('type', flat=True).distinct().order_by('type'))
         return Response({
             'cities': [c for c in cities if c],
             'localities': [l for l in localities if l],
@@ -463,6 +463,6 @@ class RentOverlapCheckView(APIView):
             end_date__gt=start_date,
         )
         if exclude_rent_id:
-            qs = qs.exclude(rent_id=exclude_rent_id)
+            qs = qs.exclude(id=exclude_rent_id)
 
         return Response({'overlaps': qs.exists()})

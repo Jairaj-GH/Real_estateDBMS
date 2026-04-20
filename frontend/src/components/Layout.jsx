@@ -50,42 +50,33 @@ export default function Layout({ children }) {
     navigate('/login')
   }
 
-  const initials = (user?.full_name || user?.email || '?')
-    .split(' ')
-    .map(w => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-
   return (
     <div className="layout">
       {/* Mobile Backdrop */}
       {mobileMenuOpen && (
         <div 
           className="modal-overlay" 
-          style={{ zIndex: 999, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)' }} 
+          style={{ zIndex: 999, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)' }} 
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
-      <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`}>
+      <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`} style={{ display: 'flex', flexDirection: 'column' }}>
         <div className="sidebar-logo" style={{ padding: '48px 40px' }}>
           <h2 style={{ 
             fontFamily: 'Instrument Serif, serif', 
             fontSize: '2.5rem', 
             fontStyle: 'italic', 
             fontWeight: 400,
-            background: 'linear-gradient(to right, #fff, var(--peach))',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
+            color: '#fff'
           }}>
             RealEstate
           </h2>
-          <span style={{ fontSize: '0.65rem', color: '#78350f', letterSpacing: '0.3em', marginTop: -4 }}>EST. 2026</span>
+          <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.3em', display: 'block', marginTop: 4 }}>EST. 2026</span>
         </div>
 
-        <nav className="sidebar-nav" style={{ padding: '0 0' }}>
-          <div style={{ padding: '0 40px 20px', fontSize: '0.7rem', fontWeight: 800, color: '#44403c', letterSpacing: '0.2em' }}>NAVIGATION</div>
+        <nav className="sidebar-nav" style={{ flex: 1, overflowY: 'auto' }}>
+          <div style={{ padding: '0 40px 20px', fontSize: '0.7rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em' }}>NAVIGATION</div>
           {navItems.map(item => (
             <NavLink
               key={item.to}
@@ -100,9 +91,23 @@ export default function Layout({ children }) {
           ))}
         </nav>
 
-        <div className="sidebar-footer" style={{ padding: 40, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <div className="user-chip" onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: 16 }}>
-            <div className="avatar" style={{ borderRadius: '50%', width: 44, height: 44, overflow: 'hidden' }}>
+        <div className="sidebar-footer" style={{ padding: 40 }}>
+          <div 
+            className="user-chip" 
+            onClick={handleLogout} 
+            style={{ 
+              background: 'rgba(255,255,255,0.05)', 
+              border: '1px solid rgba(255,255,255,0.1)', 
+              padding: 16,
+              borderRadius: 20,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              cursor: 'pointer',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            <div className="avatar" style={{ borderRadius: '50%', width: 44, height: 44, overflow: 'hidden', border: '2px solid rgba(255,255,255,0.2)' }}>
               <img 
                 src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=100&h=100" 
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -110,8 +115,8 @@ export default function Layout({ children }) {
               />
             </div>
             <div className="info">
-              <div className="name" style={{ fontWeight: 700, fontSize: '0.9rem' }}>{user?.full_name || user?.email}</div>
-              <div className="role-badge" style={{ color: '#a8a29e' }}>
+              <div className="name" style={{ fontWeight: 700, fontSize: '0.9rem', color: '#fff' }}>{user?.full_name || 'Executive'}</div>
+              <div className="role-badge" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', fontWeight: 800 }}>
                 {user?.role?.toUpperCase()}
               </div>
             </div>
@@ -121,74 +126,50 @@ export default function Layout({ children }) {
 
       <div className="main-content">
         <header className="topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24, flex: 1 }}>
             <button 
-              className="hamburger-btn"
+              className="hamburger-btn btn"
+              style={{ padding: 12, width: 44, height: 44 }}
               onClick={() => setMobileMenuOpen(true)}
             >
               ☰
             </button>
             <div>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 400, color: '#1c1917', fontFamily: 'Instrument Serif, serif', fontStyle: 'italic' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 400, color: '#fff', fontFamily: 'Instrument Serif, serif', fontStyle: 'italic' }}>
                 {user?.role === 'office' && 'Intelligence Hub'}
                 {user?.role === 'agent' && 'Agent Performance'}
                 {user?.role === 'customer' && 'Elite Marketplace'}
                 {user?.role === 'admin' && 'System Governance'}
               </h2>
-              <div style={{ fontSize: '0.7rem', color: '#78350f', fontWeight: 800, letterSpacing: '0.1em', marginTop: -4 }}>GUWAHATI PORTAL</div>
             </div>
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
             <div style={{ 
-              background: 'rgba(58, 90, 64, 0.1)', 
-              color: '#3a5a40', 
+              background: 'rgba(255, 255, 255, 0.1)', 
+              color: '#fff', 
               padding: '8px 16px', 
               borderRadius: 99, 
               fontSize: '0.7rem', 
               fontWeight: 900, 
-              letterSpacing: '0.1em',
-              border: '1px solid rgba(58, 90, 64, 0.2)'
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              border: '1px solid rgba(255, 255, 255, 0.2)'
             }}>
-              ● LIVE SYSTEM
+              <span style={{ color: '#4ade80' }}>●</span> LIVE SYSTEM
             </div>
             <button 
               onClick={handleLogout}
-              style={{ 
-                background: '#1c1917', 
-                color: '#fff', 
-                padding: '12px 24px', 
-                borderRadius: 99, 
-                fontSize: '0.75rem', 
-                fontWeight: 800, 
-                border: 'none', 
-                cursor: 'pointer',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+              className="btn btn-primary"
+              style={{ padding: '12px 24px' }}
             >
               Sign Out
             </button>
           </div>
         </header>
 
-        <main className="page-content" onScroll={e => {
-          const winScroll = e.target.scrollTop;
-          const height = e.target.scrollHeight - e.target.clientHeight;
-          const scrolled = (winScroll / height) * 100;
-          document.getElementById("scrollBar").style.width = scrolled + "%";
-        }}>
-          <div id="scrollBar" className="scroll-progress-bar" style={{ 
-            height: 4, 
-            background: 'linear-gradient(to right, var(--primary), var(--peach))', 
-            position: 'fixed', 
-            top: 'var(--topbar-height)', 
-            width: 0, 
-            zIndex: 1001,
-            transition: 'width 0.2s ease-out',
-            boxShadow: '0 2px 10px var(--primary-glow)'
-          }} />
+        <main className="page-content">
           {children}
         </main>
       </div>

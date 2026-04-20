@@ -27,17 +27,23 @@ class TenantSerializer(serializers.ModelSerializer):
 
 
 class PropertySerializer(serializers.ModelSerializer):
-    owner_name = serializers.CharField(source='owner.name', read_only=True)
-    agent_name = serializers.CharField(source='agent.name', read_only=True)
+    owner_name = serializers.SerializerMethodField()
+    agent_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Property
         fields = [
             'property_id', 'owner', 'owner_name', 'agent', 'agent_name',
-            'address', 'locality', 'city', 'property_type', 'bedrooms',
-            'bathrooms', 'size_sqft', 'construction_year', 'listed_price',
-            'current_status', 'description', 'listed_date',
+            'address', 'locality', 'city', 'type', 'no_of_bedroom',
+            'size', 'construction_year', 'listed_price',
+            'current_status', 'listed_date',
         ]
+
+    def get_owner_name(self, obj):
+        return obj.owner.name if obj.owner else "N/A"
+    
+    def get_agent_name(self, obj):
+        return obj.agent.name if obj.agent else "N/A"
 
 
 class PropertyDetailSerializer(serializers.ModelSerializer):
@@ -59,8 +65,7 @@ class PropertyDetailSerializer(serializers.ModelSerializer):
         ).first()
         if rent:
             return {
-                'rent_id': rent.rent_id,
-                'tenant_name': rent.tenant.name,
+                'tenant_name': rent.tenant.name if rent.tenant else "N/A",
                 'monthly_rent': str(rent.monthly_rent),
                 'start_date': str(rent.start_date),
                 'end_date': str(rent.end_date),
@@ -71,8 +76,7 @@ class PropertyDetailSerializer(serializers.ModelSerializer):
         sale = Sale.objects.filter(property=obj).first()
         if sale:
             return {
-                'sale_id': sale.sale_id,
-                'buyer_name': sale.buyer.name,
+                'buyer_name': sale.buyer.name if sale.buyer else "N/A",
                 'sale_date': str(sale.sale_date),
                 'final_price': str(sale.final_price),
             }
@@ -80,22 +84,30 @@ class PropertyDetailSerializer(serializers.ModelSerializer):
 
 
 class SaleSerializer(serializers.ModelSerializer):
-    property_address = serializers.CharField(source='property.address', read_only=True)
-    property_city = serializers.CharField(source='property.city', read_only=True)
-    property_locality = serializers.CharField(source='property.locality', read_only=True)
-    property_type = serializers.CharField(source='property.property_type', read_only=True)
-    property_bedrooms = serializers.IntegerField(source='property.bedrooms', read_only=True)
-    buyer_name = serializers.CharField(source='buyer.name', read_only=True)
-    agent_name = serializers.CharField(source='agent.name', read_only=True)
+    property_address = serializers.SerializerMethodField()
+    property_city = serializers.SerializerMethodField()
+    property_locality = serializers.SerializerMethodField()
+    property_type = serializers.SerializerMethodField()
+    property_bedrooms = serializers.SerializerMethodField()
+    buyer_name = serializers.SerializerMethodField()
+    agent_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Sale
         fields = [
-            'sale_id', 'property', 'property_address', 'property_city',
+            'property', 'property_address', 'property_city',
             'property_locality', 'property_type', 'property_bedrooms',
             'buyer', 'buyer_name', 'agent', 'agent_name',
             'sale_date', 'final_price', 'days_on_market',
         ]
+
+    def get_property_address(self, obj): return obj.property.address if obj.property else "Unknown"
+    def get_property_city(self, obj): return obj.property.city if obj.property else "Unknown"
+    def get_property_locality(self, obj): return obj.property.locality if obj.property else "Unknown"
+    def get_property_type(self, obj): return obj.property.type if obj.property else "Unknown"
+    def get_property_bedrooms(self, obj): return obj.property.no_of_bedroom if obj.property else 0
+    def get_buyer_name(self, obj): return obj.buyer.name if obj.buyer else "N/A"
+    def get_agent_name(self, obj): return obj.agent.name if obj.agent else "N/A"
 
     def validate(self, data):
         prop = data.get('property')
@@ -109,19 +121,25 @@ class SaleSerializer(serializers.ModelSerializer):
 
 
 class RentSerializer(serializers.ModelSerializer):
-    property_address = serializers.CharField(source='property.address', read_only=True)
-    property_city = serializers.CharField(source='property.city', read_only=True)
-    property_locality = serializers.CharField(source='property.locality', read_only=True)
-    tenant_name = serializers.CharField(source='tenant.name', read_only=True)
-    agent_name = serializers.CharField(source='agent.name', read_only=True)
+    property_address = serializers.SerializerMethodField()
+    property_city = serializers.SerializerMethodField()
+    property_locality = serializers.SerializerMethodField()
+    tenant_name = serializers.SerializerMethodField()
+    agent_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Rent
         fields = [
-            'rent_id', 'property', 'property_address', 'property_city',
+            'id', 'property', 'property_address', 'property_city',
             'property_locality', 'tenant', 'tenant_name', 'agent', 'agent_name',
             'start_date', 'end_date', 'monthly_rent',
         ]
+
+    def get_property_address(self, obj): return obj.property.address if obj.property else "Unknown"
+    def get_property_city(self, obj): return obj.property.city if obj.property else "Unknown"
+    def get_property_locality(self, obj): return obj.property.locality if obj.property else "Unknown"
+    def get_tenant_name(self, obj): return obj.tenant.name if obj.tenant else "N/A"
+    def get_agent_name(self, obj): return obj.agent.name if obj.agent else "N/A"
 
     def validate(self, data):
         prop = data.get('property')
@@ -161,7 +179,7 @@ class AgentSalesReportSerializer(serializers.Serializer):
     agent_name = serializers.CharField()
     contact = serializers.CharField()
     email = serializers.CharField()
-    rating = serializers.DecimalField(max_digits=3, decimal_places=1)
+    rating = serializers.DecimalField(max_digits=2, decimal_places=1)
     total_sales = serializers.IntegerField()
     total_revenue = serializers.DecimalField(max_digits=20, decimal_places=2)
     sales = SaleSerializer(many=True)
@@ -172,6 +190,6 @@ class AgentRentalReportSerializer(serializers.Serializer):
     agent_name = serializers.CharField()
     contact = serializers.CharField()
     email = serializers.CharField()
-    rating = serializers.DecimalField(max_digits=3, decimal_places=1)
+    rating = serializers.DecimalField(max_digits=2, decimal_places=1)
     total_rentals = serializers.IntegerField()
     rents = RentSerializer(many=True)

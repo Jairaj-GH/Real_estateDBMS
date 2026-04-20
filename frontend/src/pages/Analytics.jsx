@@ -10,20 +10,20 @@ function BarChart({ data, title, height = 300 }) {
   
   return (
     <div className="card" style={{ padding: '32px', height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', marginBottom: 32 }}>{title}</h3>
+      <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', marginBottom: 32, color: '#fff' }}>{title}</h3>
       <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: 12, paddingBottom: 24 }}>
         {data.map((d, i) => (
           <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
             <div style={{ 
               width: '100%', 
               height: `${(d.value / maxVal) * 100}%`, 
-              background: 'linear-gradient(to top, var(--primary), var(--peach))', 
+              background: 'linear-gradient(to top, var(--primary), #a78bfa)', 
               borderRadius: '8px 8px 4px 4px',
-              transition: 'height 1s cubic-bezier(0.23, 1, 0.32, 1)',
+              transition: 'height 1.5s cubic-bezier(0.23, 1, 0.32, 1)',
               minHeight: 4,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
+              boxShadow: '0 4px 20px rgba(139, 92, 246, 0.2)'
             }} />
-            <span style={{ fontSize: '0.6rem', fontWeight: 900, color: '#a8a29e', textAlign: 'center' }}>{d.label}</span>
+            <span style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--text-muted)', textAlign: 'center' }}>{d.label}</span>
           </div>
         ))}
       </div>
@@ -33,22 +33,23 @@ function BarChart({ data, title, height = 300 }) {
 
 function StatCard({ label, value, trend, icon }) {
   return (
-    <div className="card" style={{ padding: '32px', background: '#fff' }}>
+    <div className="card" style={{ padding: '32px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
         <div style={{ fontSize: '1.5rem' }}>{icon}</div>
         <div style={{ 
           fontSize: '0.7rem', 
           fontWeight: 900, 
-          color: trend.startsWith('+') ? '#3a5a40' : '#991b1b',
-          background: trend.startsWith('+') ? 'rgba(58, 90, 64, 0.1)' : 'rgba(153, 27, 27, 0.1)',
+          color: trend.startsWith('+') ? '#4ade80' : '#f87171',
+          background: trend.startsWith('+') ? 'rgba(74, 222, 128, 0.1)' : 'rgba(248, 113, 113, 0.1)',
           padding: '4px 12px',
-          borderRadius: 99
+          borderRadius: 99,
+          border: trend.startsWith('+') ? '1px solid rgba(74, 222, 128, 0.2)' : '1px solid rgba(248, 113, 113, 0.2)'
         }}>
           {trend}
         </div>
       </div>
-      <div style={{ fontSize: '0.65rem', fontWeight: 900, color: '#78350f', letterSpacing: '0.2em', marginBottom: 8 }}>{label}</div>
-      <div style={{ fontSize: '2rem', fontWeight: 900, fontFamily: 'Instrument Serif, serif', fontStyle: 'italic', color: '#1c1917' }}>{value}</div>
+      <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--accent)', letterSpacing: '0.2em', marginBottom: 8 }}>{label}</div>
+      <div style={{ fontSize: '2rem', fontWeight: 900, fontFamily: 'Instrument Serif, serif', fontStyle: 'italic', color: '#fff' }}>{value}</div>
     </div>
   )
 }
@@ -57,11 +58,10 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Simulate loading for the premium feel
     setTimeout(() => setLoading(false), 800)
   }, [])
 
-  if (loading) return <div style={{ padding: 100, textAlign: 'center' }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
+  if (loading) return <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" /></div>
 
   const marketData = [
     { label: 'JAN', value: 45 },
@@ -82,8 +82,8 @@ export default function Analytics() {
   return (
     <div style={{ animation: 'fadeIn 0.8s ease-out' }}>
       <div style={{ marginBottom: 60 }}>
-        <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 900, color: '#1c1917', marginBottom: 12 }}>Market Intelligence</h1>
-        <p style={{ color: '#78350f', fontSize: '1.2rem', fontWeight: 600, fontFamily: 'Instrument Serif, serif', fontStyle: 'italic' }}>Real-time transactional data and asset performance indicators.</p>
+        <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 900, color: '#fff', marginBottom: 12 }}>Market Intelligence</h1>
+        <p style={{ color: 'var(--accent)', fontSize: '1.2rem', fontWeight: 600, fontFamily: 'Instrument Serif, serif', fontStyle: 'italic' }}>Real-time transactional data and asset performance indicators.</p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 32, marginBottom: 60 }}>
@@ -98,10 +98,10 @@ export default function Analytics() {
         <BarChart title="Sector Performance Matrix" data={sectorData} />
       </div>
 
-      <div className="card" style={{ marginTop: 32, padding: 'clamp(32px, 8vw, 80px)', background: 'linear-gradient(135deg, #1c1917 0%, #0c0a09 100%)', color: '#fff', textAlign: 'center' }}>
+      <div className="card" style={{ marginTop: 32, padding: 'clamp(32px, 8vw, 80px)', background: 'rgba(0,0,0,0.4)', color: '#fff', textAlign: 'center' }}>
         <div style={{ fontSize: '3rem', marginBottom: 24 }}>🧠</div>
         <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', fontWeight: 900, marginBottom: 16 }}>Predictive Insights</h2>
-        <p style={{ maxWidth: 800, margin: '0 auto', color: '#a8a29e', fontSize: '1.1rem', lineHeight: 1.8, fontFamily: 'Instrument Serif, serif', fontStyle: 'italic' }}>
+        <p style={{ maxWidth: 800, margin: '0 auto', color: 'var(--text-muted)', fontSize: '1.1rem', lineHeight: 1.8, fontFamily: 'Instrument Serif, serif', fontStyle: 'italic' }}>
           "Based on current market velocity in Guwahati, we anticipate a 4.2% appreciation in the core luxury sector over the next quarter. Strategic acquisition of high-rise assets is recommended."
         </p>
       </div>

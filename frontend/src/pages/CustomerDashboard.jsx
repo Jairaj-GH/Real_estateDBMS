@@ -18,83 +18,51 @@ function PropertyDetailModal({ property, onClose }) {
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 760 }}>
-        <div className="modal-header">
-          <h3>🏡 {property.address}</h3>
-          <button className="btn btn-secondary btn-sm btn-icon" onClick={onClose}>✕</button>
-        </div>
-        <div className="modal-body">
-          {!detail ? (
-            <div className="loading-center"><div className="spinner" /></div>
-          ) : (
-            <>
-              {/* Hero */}
-              <div style={{ height: 180, background: 'linear-gradient(135deg,#e0e7ff,#dbeafe)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '4rem', marginBottom: 20, position: 'relative' }}>
-                {TYPE_ICONS[detail.property_type] || '🏡'}
-                <span className={`status-badge status-${detail.current_status}`} style={{ position: 'absolute', top: 12, right: 12 }}>
-                  {detail.current_status}
-                </span>
-              </div>
+      <div className="card" style={{ maxWidth: 800, padding: 0, overflow: 'hidden', animation: 'scaleIn 0.3s cubic-bezier(0.23, 1, 0.32, 1)' }}>
+        {!detail ? (
+          <div style={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" /></div>
+        ) : (
+          <>
+            <div style={{ height: 300, background: 'linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0.8)), url("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800") center/cover', position: 'relative', display: 'flex', alignItems: 'flex-end', padding: 40 }}>
+               <button className="btn btn-sm" style={{ position: 'absolute', top: 24, right: 24, background: 'rgba(0,0,0,0.5)', minWidth: 40, padding: 0 }} onClick={onClose}>✕</button>
+               <div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--accent)', letterSpacing: '0.2em', marginBottom: 8 }}>{detail.type?.toUpperCase()} · {detail.current_status?.toUpperCase()}</div>
+                  <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '2.5rem', color: '#fff', margin: 0 }}>{detail.address}</h2>
+               </div>
+            </div>
 
-              {/* Info Grid */}
-              <div className="detail-info-grid" style={{ marginBottom: 20 }}>
+            <div style={{ padding: 40 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 24, marginBottom: 40 }}>
                 {[
-                  { label: 'City', value: detail.city },
-                  { label: 'Locality', value: detail.locality },
-                  { label: 'Type', value: detail.property_type },
-                  { label: 'Bedrooms', value: detail.bedrooms ? `${detail.bedrooms} BHK` : '—' },
-                  { label: 'Bathrooms', value: detail.bathrooms || '—' },
-                  { label: 'Size', value: detail.size_sqft ? `${detail.size_sqft} sq.ft` : '—' },
-                  { label: 'Built Year', value: detail.construction_year || '—' },
-                  { label: 'Listed Price', value: detail.listed_price ? fmt(detail.listed_price) : '—' },
-                  { label: 'Owner', value: detail.owner?.name },
-                  { label: 'Agent', value: detail.agent?.name || '—' },
-                  { label: 'Agent Contact', value: detail.agent?.contact || '—' },
-                  { label: 'Listed On', value: detail.listed_date || '—' },
+                  { label: 'LOCALITY', value: detail.locality },
+                  { label: 'BHK', value: detail.no_of_bedroom },
+                  { label: 'SIZE', value: detail.size ? `${detail.size} sq.ft` : null },
+                  { label: 'PRICE', value: fmt(detail.listed_price) }
                 ].map(i => (
-                  <div key={i.label} className="info-item">
-                    <div className="label">{i.label}</div>
-                    <div className="value">{i.value || '—'}</div>
+                  <div key={i.label}>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 900, letterSpacing: '0.1em', marginBottom: 4 }}>{i.label}</div>
+                    <div style={{ fontSize: '1.2rem', color: '#fff', fontWeight: 700, fontFamily: 'Instrument Serif, serif', fontStyle: 'italic' }}>{i.value || '—'}</div>
                   </div>
                 ))}
               </div>
 
-              {detail.description && (
-                <div style={{ padding: 14, background: 'var(--gray-50)', borderRadius: 8, marginBottom: 16 }}>
-                  <div style={{ fontWeight: 600, fontSize: '.8rem', color: 'var(--gray-500)', marginBottom: 6 }}>DESCRIPTION</div>
-                  <p style={{ fontSize: '.9rem', lineHeight: 1.6 }}>{detail.description}</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 40 }}>
+                <div>
+                   <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: 16 }}>DESCRIPTION</h3>
+                   <p style={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.8, fontSize: '0.95rem' }}>{detail.description || 'No description provided for this exclusive estate.'}</p>
                 </div>
-              )}
-
-              {detail.active_rent && (
-                <div className="alert alert-warning">
-                  <div>
-                    <strong>🔑 Active Rental</strong><br />
-                    Tenant: {detail.active_rent.tenant_name} · Rent: {fmt(detail.active_rent.monthly_rent)}/mo<br />
-                    Period: {detail.active_rent.start_date} → {detail.active_rent.end_date}
-                  </div>
+                <div>
+                   <h3 style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: 16 }}>REPRESENTATIVE</h3>
+                   <div className="card" style={{ padding: 20, background: 'rgba(255,255,255,0.05)' }}>
+                      <div style={{ fontWeight: 800, color: '#fff', fontSize: '0.9rem' }}>{detail.agent?.name || 'Guwahati Direct'}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{detail.agent?.contact || 'Access Denied'}</div>
+                      <button className="btn btn-primary" style={{ width: '100%', marginTop: 16, fontSize: '0.65rem' }}>REQUEST BRIEFING</button>
+                   </div>
                 </div>
-              )}
-
-              {detail.sale_info && (
-                <div className="alert alert-info">
-                  <div>
-                    <strong>💰 Sale Information</strong><br />
-                    Buyer: {detail.sale_info.buyer_name} · Price: {fmt(detail.sale_info.final_price)}<br />
-                    Date: {detail.sale_info.sale_date}
-                  </div>
-                </div>
-              )}
-
-              {detail.current_status === 'available' && (
-                <div className="alert alert-success">
-                  ✅ This property is <strong>available</strong>. Contact the agent to schedule a visit.
-                  {detail.agent && <><br />📞 {detail.agent.name}: {detail.agent.contact}</>}
-                </div>
-              )}
-            </>
-          )}
-        </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
@@ -102,23 +70,23 @@ function PropertyDetailModal({ property, onClose }) {
 
 function PropertyCard({ property, onClick }) {
   return (
-    <div className="property-card" onClick={onClick}>
-      <div className="property-card-img">
-        {TYPE_ICONS[property.property_type] || '🏡'}
-        <span className={`status-badge status-${property.current_status}`}>{property.current_status}</span>
+    <div className="card" style={{ padding: 0, overflow: 'hidden', transition: 'transform 0.3s' }} onClick={onClick}>
+      <div style={{ height: 200, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', position: 'relative' }}>
+         {TYPE_ICONS[property.type] || '🏡'}
+         <div style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(139, 92, 246, 0.8)', color: '#fff', fontSize: '0.6rem', fontWeight: 900, padding: '4px 10px', borderRadius: 99, letterSpacing: '0.1em' }}>
+            {property.current_status.toUpperCase()}
+         </div>
       </div>
-      <div className="property-card-body">
-        <h4>{property.address}</h4>
-        <p className="locality">📍 {property.locality ? `${property.locality}, ` : ''}{property.city}</p>
-        <div className="property-card-meta">
-          {property.bedrooms > 0 && <span>🛏 {property.bedrooms} BHK</span>}
-          {property.bathrooms > 0 && <span>🚿 {property.bathrooms}</span>}
-          {property.size_sqft && <span>📐 {property.size_sqft} sq.ft</span>}
-          {property.property_type && <span>{TYPE_ICONS[property.property_type] || '🏡'} {property.property_type}</span>}
+      <div style={{ padding: 32 }}>
+        <div style={{ fontSize: '0.6rem', color: 'var(--accent)', fontWeight: 900, letterSpacing: '0.1em', marginBottom: 8 }}>{property.locality?.toUpperCase() || property.city?.toUpperCase()}</div>
+        <h4 style={{ color: '#fff', fontSize: '1.25rem', marginBottom: 16, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{property.address}</h4>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 24, fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+           <span>🛏 {property.no_of_bedroom} BHK</span>
+           <span>📏 {property.size} ft²</span>
         </div>
-        <div className="property-card-footer">
-          <span className="property-price">{property.listed_price ? fmt(property.listed_price) : 'Price on request'}</span>
-          <span style={{ fontSize: '.75rem', color: 'var(--gray-400)' }}>{property.construction_year ? `Built ${property.construction_year}` : ''}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+           <span style={{ color: '#fff', fontSize: '1.4rem', fontWeight: 900, fontFamily: 'Instrument Serif, serif', fontStyle: 'italic' }}>{fmt(property.listed_price)}</span>
+           <button className="btn btn-sm">VIEW</button>
         </div>
       </div>
     </div>
@@ -131,8 +99,8 @@ export default function CustomerDashboard() {
   const [selected, setSelected] = useState(null)
   const [meta, setMeta] = useState({ cities: [], localities: [], types: [] })
   const [filters, setFilters] = useState({
-    city: 'Guwahati', locality: '', property_type: '', status: 'available',
-    min_price: '', max_price: '', bedrooms: '', search: ''
+    city: 'Guwahati', locality: '', type: '', status: 'available',
+    min_price: '', max_price: '', no_of_bedroom: '', search: ''
   })
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
@@ -159,106 +127,58 @@ export default function CustomerDashboard() {
   useEffect(() => { fetchProps() }, [fetchProps])
 
   const setF = (k, v) => { setFilters(f => ({ ...f, [k]: v })); setPage(1) }
-  const clearFilters = () => { setFilters({ city: '', locality: '', property_type: '', status: '', min_price: '', max_price: '', bedrooms: '', search: '' }); setPage(1) }
-
-  const totalPages = Math.ceil(total / PAGE_SIZE)
+  const clearFilters = () => { setFilters({ city: '', locality: '', type: '', status: '', min_price: '', max_price: '', no_of_bedroom: '', search: '' }); setPage(1) }
 
   return (
-    <div>
-      <div className="page-header">
-        <h1>🔍 Find Your Perfect Property</h1>
-        <p>Browsing {total} propert{total === 1 ? 'y' : 'ies'} in Guwahati & beyond</p>
+    <div style={{ animation: 'fadeIn 0.8s ease-out' }}>
+      <div style={{ marginBottom: 60 }}>
+        <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 900, color: '#fff', marginBottom: 12 }}>Search Registry</h1>
+        <p style={{ color: 'var(--accent)', fontSize: '1.2rem', fontWeight: 600, fontFamily: 'Instrument Serif, serif', fontStyle: 'italic' }}>Curating {total} high-density assets for your portfolio.</p>
       </div>
 
-      {/* Filters */}
-      <div className="filter-bar">
-        <div className="filter-bar-inner">
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Search</label>
-            <input className="form-control" placeholder="Address, locality…" value={filters.search} onChange={e => setF('search', e.target.value)} />
+      <div className="card" style={{ marginBottom: 60, background: 'rgba(0,0,0,0.3)', padding: 40 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24 }}>
+          <div className="form-group">
+            <label style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: 12, display: 'block' }}>QUERY</label>
+            <input className="form-control" style={{ height: 56 }} placeholder="Address, locality…" value={filters.search} onChange={e => setF('search', e.target.value)} />
           </div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">City</label>
-            <select className="form-control" value={filters.city} onChange={e => setF('city', e.target.value)}>
-              <option value="">All Cities</option>
-              {meta.cities.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Locality</label>
-            <select className="form-control" value={filters.locality} onChange={e => setF('locality', e.target.value)}>
-              <option value="">All Areas</option>
-              {meta.localities.map(l => <option key={l} value={l}>{l}</option>)}
-            </select>
-          </div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Type</label>
-            <select className="form-control" value={filters.property_type} onChange={e => setF('property_type', e.target.value)}>
-              <option value="">All Types</option>
-              {meta.types.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Status</label>
-            <select className="form-control" value={filters.status} onChange={e => setF('status', e.target.value)}>
-              <option value="">All</option>
-              <option value="available">Available</option>
-              <option value="rented">Rented</option>
-              <option value="sold">Sold</option>
-            </select>
-          </div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Bedrooms</label>
-            <select className="form-control" value={filters.bedrooms} onChange={e => setF('bedrooms', e.target.value)}>
+          <div className="form-group">
+            <label style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: 12, display: 'block' }}>BHK</label>
+            <select className="form-control" style={{ height: 56 }} value={filters.no_of_bedroom} onChange={e => setF('no_of_bedroom', e.target.value)}>
               <option value="">Any</option>
               {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} BHK</option>)}
             </select>
           </div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Min Price (₹)</label>
-            <input type="number" className="form-control" placeholder="1000000" value={filters.min_price} onChange={e => setF('min_price', e.target.value)} />
+          <div className="form-group">
+            <label style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: 12, display: 'block' }}>LOCALITY</label>
+            <select className="form-control" style={{ height: 56 }} value={filters.locality} onChange={e => setF('locality', e.target.value)}>
+              <option value="">All Regions</option>
+              {meta.localities.map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
           </div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Max Price (₹)</label>
-            <input type="number" className="form-control" placeholder="20000000" value={filters.max_price} onChange={e => setF('max_price', e.target.value)} />
+          <div className="form-group">
+            <label style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--accent)', letterSpacing: '0.1em', marginBottom: 12, display: 'block' }}>VALUATION (MIN)</label>
+            <input type="number" className="form-control" style={{ height: 56 }} placeholder="0" value={filters.min_price} onChange={e => setF('min_price', e.target.value)} />
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-            <button className="btn btn-secondary" onClick={clearFilters}>Clear All</button>
+             <button className="btn" style={{ height: 56, width: '100%' }} onClick={clearFilters}>RESET FILTERS</button>
           </div>
         </div>
       </div>
 
-      {/* Results */}
       {loading ? (
-        <div className="loading-center"><div className="spinner" /></div>
+        <div style={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" /></div>
       ) : properties.length === 0 ? (
-        <div className="empty-state">
-          <div className="icon">🏘️</div>
-          <p>No properties found matching your criteria.</p>
-          <button className="btn btn-outline" style={{ marginTop: 12 }} onClick={clearFilters}>Clear Filters</button>
+        <div className="card" style={{ padding: 100, textAlign: 'center', background: 'rgba(255,255,255,0.02)' }}>
+          <div style={{ fontSize: '3rem', marginBottom: 24 }}>🌫️</div>
+          <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', fontFamily: 'Instrument Serif, serif' }}>No results found in current registry parameters.</p>
         </div>
       ) : (
-        <>
-          <div className="property-grid">
-            {properties.map(p => (
-              <PropertyCard key={p.property_id} property={p} onClick={() => setSelected(p)} />
-            ))}
-          </div>
-
-          {totalPages > 1 && (
-            <div className="pagination">
-              <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>← Prev</button>
-              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                const pg = page <= 4 ? i + 1 : page + i - 3
-                if (pg < 1 || pg > totalPages) return null
-                return (
-                  <button key={pg} className={pg === page ? 'active' : ''} onClick={() => setPage(pg)}>{pg}</button>
-                )
-              })}
-              <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Next →</button>
-            </div>
-          )}
-        </>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 32 }}>
+          {properties.map(p => (
+            <PropertyCard key={p.property_id} property={p} onClick={() => setSelected(p)} />
+          ))}
+        </div>
       )}
 
       {selected && <PropertyDetailModal property={selected} onClose={() => setSelected(null)} />}

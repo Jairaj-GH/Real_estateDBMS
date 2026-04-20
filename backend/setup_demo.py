@@ -36,7 +36,7 @@ DEMO_USERS = [
         'first_name': 'Agent',
         'last_name': 'One',
         'role': 'agent',
-        'agent_id': None,
+        'agent_id': 1, # Link to Agent ID 1
     },
     {
         'email': 'buyer1@example.com',
@@ -62,56 +62,39 @@ def setup_demo_users():
     print("Setting up demo users for Real Estate Management System")
     print("="*60 + "\n")
     
-    created_count = 0
-    skipped_count = 0
-    
     for u in DEMO_USERS:
         email = u['email']
         username = email.split('@')[0]
         
-        if User.objects.filter(email=email).exists():
-            user = User.objects.get(email=email)
-            user.set_password(u['password'])
-            user.save()
-            
-            # Ensure profile exists
-            UserProfile.objects.get_or_create(
-                user=user,
-                defaults={'role': u['role'], 'agent_id': u['agent_id']}
-            )
-            print(f"  [OK] Updated {email} existing user")
-            skipped_count += 1
-            continue
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                'username': username,
+                'first_name': u['first_name'],
+                'last_name': u['last_name'],
+            }
+        )
         
-        try:
-            user = User.objects.create_user(
-                username=username,
-                email=email,
-                password=u['password'],
-                first_name=u['first_name'],
-                last_name=u['last_name'],
-            )
-            
-            if u['role'] == 'admin':
-                user.is_staff = True
-                user.is_superuser = True
-                user.save()
-            
-            UserProfile.objects.create(
-                user=user,
-                role=u['role'],
-                agent_id=u['agent_id'],
-            )
-            
-            print(f"  [OK] Created {email} ({u['role']})")
-            print(f"     Password: {u['password']}")
-            created_count += 1
-            
-        except Exception as e:
-            print(f"  [ERROR] Failed to create {email}: {e}")
-    
+        user.set_password(u['password'])
+        if u['role'] == 'admin':
+            user.is_staff = True
+            user.is_superuser = True
+        user.save()
+        
+        # Update or create profile
+        profile, p_created = UserProfile.objects.update_or_create(
+            user=user,
+            defaults={
+                'role': u['role'],
+                'agent_id': u['agent_id']
+            }
+        )
+        
+        status = "Created" if created else "Updated"
+        print(f"  [OK] {status} {email} ({u['role']})")
+
     print("\n" + "="*60)
-    print(f"Setup complete! Created: {created_count}, Updated/Skipped: {skipped_count}")
+    print("Setup complete!")
     print("="*60)
     print("\nDemo users are ready:")
     print("   * Office Staff: office@realestate.com / office123")
