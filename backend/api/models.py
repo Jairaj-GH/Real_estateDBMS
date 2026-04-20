@@ -101,8 +101,7 @@ class Sale(models.Model):
 
 
 class Rent(models.Model):
-    id = models.AutoField(primary_key=True)
-    property = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id', primary_key=True)
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, db_column='tenant_id')
     agent = models.ForeignKey(Agent, on_delete=models.CASCADE, db_column='agent_id')
     start_date = models.DateField()

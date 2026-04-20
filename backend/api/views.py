@@ -452,7 +452,6 @@ class RentOverlapCheckView(APIView):
         property_id = request.data.get('property_id')
         start_date = request.data.get('start_date')
         end_date = request.data.get('end_date')
-        exclude_rent_id = request.data.get('exclude_rent_id')
 
         if not all([property_id, start_date, end_date]):
             return Response({'error': 'property_id, start_date, end_date required.'}, status=400)
@@ -462,7 +461,162 @@ class RentOverlapCheckView(APIView):
             start_date__lt=end_date,
             end_date__gt=start_date,
         )
-        if exclude_rent_id:
-            qs = qs.exclude(id=exclude_rent_id)
 
         return Response({'overlaps': qs.exists()})
+
+
+# ─── Analytics Dashboard ─────────────────────────────────────────────────────
+
+class AnalyticsView(APIView):
+    """Comprehensive analytics data from real database records."""
+    permission_classes = [IsAuthenticated, IsAnyAuthenticatedRole]
+
+    def get(self, request):
+        from datetime import date
+        from django.db.models import Avg, Max, Min
+        from django.db.models.functions import ExtractYear, ExtractMonth
+
+        # --- KPI Summary ---
+        total_sales_revenue = Sale.objects.aggregate(t=Sum('final_price'))['t'] or 0
+        total_sales_count = Sale.objects.count()
+        avg_deal_size = Sale.objects.aggregate(a=Avg('final_price'))['a'] or 0
+        active_rents = Rent.objects.filter(
+            start_date__lte=date.today(),
+            end_date__gte=date.today()
+        ).count()
+        total_properties = Property.objects.count()
+        available_properties = Property.objects.filter(current_status='available').count()
+        avg_days_on_market = Sale.objects.aggregate(a=Avg('days_on_market'))['a'] or 0
+
+        # --- Agent Performance (Top 10 by revenue) ---
+        agent_perf = []
+        agents = Agent.objects.all().order_by('name')
+        for agent in agents:
+            sales = Sale.objects.filter(agent=agent)
+            rents = Rent.objects.filter(agent=agent)
+            rev = sales.aggregate(t=Sum('final_price'))['t'] or 0
+            agent_perf.append({
+                'name': agent.name,
+                'agent_id': agent.agent_id,
+                'sales_count': sales.count(),
+                'rental_count': rents.count(),
+                'revenue': float(rev),
+                'rating': float(agent.rating) if agent.rating else 0,
+            })
+        agent_perf.sort(key=lambda x: x['revenue'], reverse=True)
+
+        # --- Year-wise Sales Trend ---
+        yearly_sales = (
+            Sale.objects.annotate(year=ExtractYear('sale_date'))
+            .values('year')
+            .annotate(count=Count('property'), revenue=Sum('final_price'))
+            .order_by('year')
+        )
+        year_trend = [
+            {'year': int(y['year']), 'count': y['count'], 'revenue': float(y['revenue'] or 0)}
+            for y in yearly_sales
+        ]
+
+        # --- Monthly Revenue (last 12 months / all available data) ---
+        monthly_sales = (
+            Sale.objects.annotate(
+                year=ExtractYear('sale_date'),
+                month=ExtractMonth('sale_date')
+            )
+            .values('year', 'month')
+            .annotate(count=Count('property'), revenue=Sum('final_price'))
+            .order_by('year', 'month')
+        )
+        monthly_trend = [
+            {
+                'year': int(m['year']),
+                'month': int(m['month']),
+                'count': m['count'],
+                'revenue': float(m['revenue'] or 0),
+            }
+            for m in monthly_sales
+        ]
+
+        # --- Property Type Distribution ---
+        type_dist = (
+            Property.objects.values('type')
+            .annotate(count=Count('property_id'))
+            .order_by('-count')
+        )
+        property_types = [
+            {'type': t['type'] or 'Unknown', 'count': t['count']}
+            for t in type_dist
+        ]
+
+        # --- City-wise Breakdown ---
+        city_dist = (
+            Property.objects.values('city')
+            .annotate(
+                count=Count('property_id'),
+                avg_price=Avg('listed_price')
+            )
+            .order_by('-count')
+        )
+        city_breakdown = [
+            {'city': c['city'] or 'Unknown', 'count': c['count'], 'avg_price': float(c['avg_price'] or 0)}
+            for c in city_dist
+        ]
+
+        # --- Property Status Distribution ---
+        status_dist = (
+            Property.objects.values('current_status')
+            .annotate(count=Count('property_id'))
+            .order_by('-count')
+        )
+        status_breakdown = [
+            {'status': s['current_status'] or 'Unknown', 'count': s['count']}
+            for s in status_dist
+        ]
+
+        # --- Recent Transactions (last 10 sales) ---
+        recent_sales = Sale.objects.select_related('property', 'buyer', 'agent').order_by('-sale_date')[:10]
+        recent = [
+            {
+                'address': s.property.address if s.property else 'N/A',
+                'city': s.property.city if s.property else 'N/A',
+                'buyer': s.buyer.name if s.buyer else 'N/A',
+                'agent': s.agent.name if s.agent else 'N/A',
+                'date': str(s.sale_date),
+                'price': float(s.final_price),
+                'days_on_market': s.days_on_market,
+            }
+            for s in recent_sales
+        ]
+
+        # --- Price Range Distribution ---
+        price_ranges = [
+            {'label': 'Under ₹20L', 'min': 0, 'max': 2000000},
+            {'label': '₹20L - ₹40L', 'min': 2000000, 'max': 4000000},
+            {'label': '₹40L - ₹60L', 'min': 4000000, 'max': 6000000},
+            {'label': '₹60L - ₹80L', 'min': 6000000, 'max': 8000000},
+            {'label': 'Above ₹80L', 'min': 8000000, 'max': 999999999},
+        ]
+        price_dist = []
+        for pr in price_ranges:
+            cnt = Property.objects.filter(listed_price__gte=pr['min'], listed_price__lt=pr['max']).count()
+            price_dist.append({'label': pr['label'], 'count': cnt})
+
+        return Response({
+            'kpi': {
+                'total_revenue': float(total_sales_revenue),
+                'total_sales': total_sales_count,
+                'avg_deal_size': float(avg_deal_size),
+                'active_rents': active_rents,
+                'total_properties': total_properties,
+                'available_properties': available_properties,
+                'avg_days_on_market': round(float(avg_days_on_market), 1),
+            },
+            'agent_performance': agent_perf[:15],
+            'year_trend': year_trend,
+            'monthly_trend': monthly_trend,
+            'property_types': property_types,
+            'city_breakdown': city_breakdown,
+            'status_breakdown': status_breakdown,
+            'recent_transactions': recent,
+            'price_distribution': price_dist,
+        })

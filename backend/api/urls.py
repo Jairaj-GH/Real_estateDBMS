@@ -34,6 +34,9 @@ urlpatterns = [
     # Agent self-service
     path('my-transactions/', views.AgentMyTransactionsView.as_view(), name='my-transactions'),
 
+    # Analytics
+    path('analytics/', views.AnalyticsView.as_view(), name='analytics'),
+
     # Admin
     path('admin/sql/', views.AdminSQLView.as_view(), name='admin-sql'),
     path('admin/stats/', views.AdminStatsView.as_view(), name='admin-stats'),

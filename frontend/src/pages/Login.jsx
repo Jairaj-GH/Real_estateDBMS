@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import bgImage from '../assets/login-bg.png'
 
 const ROLE_REDIRECTS = {
   office: '/office',
@@ -64,25 +63,28 @@ export default function Login() {
       justifyContent: 'center',
       position: 'relative'
     }}>
-      {/* Glass Card */}
+      {/* Login Card */}
       <div className="card" style={{ 
         width: '90%', 
-        maxWidth: 420, 
-        padding: '50px 40px',
+        maxWidth: 400, 
+        padding: '48px 32px',
         textAlign: 'center',
-        animation: 'fadeIn 1.2s ease-out'
+        background: '#fff',
+        border: '1px solid #ddd',
+        boxShadow: '0 12px 24px rgba(0,0,0,0.1)',
+        animation: 'fadeIn 1s ease-out'
       }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 600, marginBottom: 40, letterSpacing: '-0.02em', color: '#fff' }}>Login</h1>
+        <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 32, letterSpacing: '-0.03em', color: 'var(--text-main)' }}>Sign In</h1>
 
         {error && (
-          <div style={{ background: 'rgba(220, 38, 38, 0.2)', padding: '12px', borderRadius: 12, marginBottom: 30, fontSize: '0.85rem', border: '1px solid rgba(220, 38, 38, 0.3)', color: '#fff' }}>
+          <div style={{ background: '#fef2f2', padding: '12px', borderRadius: 12, marginBottom: 24, fontSize: '0.85rem', border: '1px solid #fee2e2', color: '#991b1b' }}>
             {error}
           </div>
         )}
 
-        <div style={{ marginBottom: 32 }}>
-          <p style={{ fontSize: '0.75rem', fontWeight: 800, opacity: 0.7, marginBottom: 16, letterSpacing: '0.05em', textTransform: 'uppercase', color: '#fff' }}>Select Role Credentials</p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ marginBottom: 28 }}>
+          <p style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: 16, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Select Role Credentials</p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
             {QUICK_LOGINS.map(role => (
               <button
                 key={role.label}
@@ -90,12 +92,14 @@ export default function Login() {
                 type="button"
                 className="btn login-btn-jelly"
                 style={{
-                  padding: '8px 16px',
-                  background: email === role.email ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.05)',
-                  borderColor: email === role.email ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.1)'
+                  padding: '8px 14px',
+                  fontSize: '0.75rem',
+                  background: email === role.email ? 'var(--bg-soft)' : '#fff',
+                  borderColor: email === role.email ? 'var(--primary)' : '#ddd',
+                  color: 'var(--text-main)'
                 }}
               >
-                <span>{role.icon}</span>
+                <span style={{ fontSize: '1rem' }}>{role.icon}</span>
                 <span>{role.label}</span>
               </button>
             ))}
@@ -112,9 +116,9 @@ export default function Login() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              style={{ width: '100%', height: 60, paddingLeft: 52, borderRadius: 50 }}
+              style={{ width: '100%', height: 56, paddingLeft: 48, borderRadius: 12 }}
             />
-            <div style={{ position: 'absolute', left: 20, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.6)' }}>
+            <div style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'rgba(0,0,0,0.4)', display: 'flex' }}>
               <UserIcon />
             </div>
           </div>
@@ -128,9 +132,9 @@ export default function Login() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              style={{ width: '100%', height: 60, paddingLeft: 52, borderRadius: 50 }}
+              style={{ width: '100%', height: 56, paddingLeft: 48, borderRadius: 12 }}
             />
-            <div style={{ position: 'absolute', left: 20, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.6)' }}>
+            <div style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'rgba(0,0,0,0.4)', display: 'flex' }}>
               <LockIcon />
             </div>
           </div>
@@ -140,9 +144,9 @@ export default function Login() {
             type="submit"
             disabled={loading}
             className="btn btn-primary login-btn-jelly"
-            style={{ padding: '16px', borderRadius: 50, marginTop: 10, width: '100%' }}
+            style={{ padding: '16px', borderRadius: 12, marginTop: 8, width: '100%', fontSize: '1rem' }}
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>
       </div>

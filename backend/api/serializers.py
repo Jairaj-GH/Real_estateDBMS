@@ -130,7 +130,7 @@ class RentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rent
         fields = [
-            'id', 'property', 'property_address', 'property_city',
+            'property', 'property_address', 'property_city',
             'property_locality', 'tenant', 'tenant_name', 'agent', 'agent_name',
             'start_date', 'end_date', 'monthly_rent',
         ]
@@ -163,7 +163,11 @@ class RentSerializer(serializers.ModelSerializer):
                 end_date__gt=start,
             )
             if self.instance:
-                overlap = overlap.exclude(pk=self.instance.pk)
+                overlap = overlap.exclude(
+                    property_id=self.instance.property_id,
+                    tenant_id=self.instance.tenant_id,
+                    start_date=self.instance.start_date,
+                )
             if overlap.exists():
                 raise serializers.ValidationError(
                     "Overlapping rent period exists for this property. "
