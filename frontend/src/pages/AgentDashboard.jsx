@@ -16,24 +16,24 @@ function AgentOverview({ data }) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginBottom: 48 }}>
-        <div className="card" style={{ padding: 40, background: '#fff', border: '1px solid #ddd' }}>
+        <div className="card" style={{ padding: 40 }}>
           <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>TOTAL CLOSURES</div>
           <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>{data?.sales.length || 0}</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>High Conversion Ratio</div>
         </div>
-        <div className="card" style={{ padding: 40, background: '#fff', border: '1px solid #ddd' }}>
+        <div className="card" style={{ padding: 40 }}>
           <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>MONTHLY TARGET</div>
           <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>75%</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Performance Benchmark</div>
         </div>
-        <div className="card" style={{ padding: 40, background: '#fff', border: '1px solid #ddd' }}>
+        <div className="card" style={{ padding: 40 }}>
           <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>MANAGED PORTFOLIO</div>
           <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>{data?.rents.length || 0}</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Active Asset Tracking</div>
         </div>
       </div>
 
-      <div className="card" style={{ padding: '48px', background: 'var(--bg-soft)', color: 'var(--text-main)', textAlign: 'center', border: '1px solid #eee' }}>
+      <div className="card" style={{ padding: '48px',  color: 'var(--text-main)', textAlign: 'center' }}>
         <div style={{ fontSize: '2.5rem', marginBottom: 20 }}>📈</div>
         <h2 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.5rem', fontWeight: 800, marginBottom: 16 }}>Productivity Briefing</h2>
         <p style={{ maxWidth: 700, margin: '0 auto', color: 'var(--text-muted)', fontSize: '1rem', lineHeight: 1.6, fontWeight: 500 }}>
@@ -53,7 +53,7 @@ function MyAchievements({ data }) {
         <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', fontWeight: 500 }}>A detailed historical record of your successful mandates.</p>
       </div>
 
-      <div className="card" style={{ padding: 0, background: '#fff', border: '1px solid #ddd' }}>
+      <div className="card" style={{ padding: 0 }}>
          <div style={{ padding: '32px 40px', borderBottom: '1px solid #eee' }}>
             <h3 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>Sales Transactions</h3>
          </div>
@@ -154,7 +154,7 @@ function MarkSold({ agentId, onUpdate }) {
         <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', fontWeight: 500 }}>Finalize a property sale and record the transaction value.</p>
       </div>
 
-      <div className="card" style={{ padding: 40, background: '#fff', border: '1px solid #ddd' }}>
+      <div className="card" style={{ padding: 40 }}>
         {msg && <div style={{ marginBottom: 32, padding: '16px', borderRadius: 12, background: msg.type === 'success' ? '#f0fdf4' : '#fef2f2', color: msg.type === 'success' ? '#166534' : '#991b1b', border: `1px solid ${msg.type === 'success' ? '#bbf7d0' : '#fee2e2'}`, fontSize: '0.9rem', fontWeight: 500 }}>{msg.text}</div>}
         <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 24 }}>
           <div className="form-group">
@@ -182,7 +182,7 @@ function MarkSold({ agentId, onUpdate }) {
                 {buyers.map(b => <option key={b.buyer_id} value={b.buyer_id}>{b.name} — {b.email}</option>)}
               </select>
             ) : (
-              <div style={{ padding: 24, background: 'var(--bg-soft)', borderRadius: 12, border: '1px solid #eee' }}>
+              <div style={{ padding: 24,  borderRadius: 12 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                   <input className="form-control" style={{ height: 44 }} placeholder="Legal Full Name" value={newBuyer.name} onChange={e => setNewBuyer(n => ({ ...n, name: e.target.value }))} />
                   <input className="form-control" style={{ height: 44 }} placeholder="Contact" value={newBuyer.contact} onChange={e => setNewBuyer(n => ({ ...n, contact: e.target.value }))} />
@@ -258,7 +258,7 @@ function MarkRented({ agentId, onUpdate }) {
         <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', fontWeight: 500 }}>Establish a new rental agreement for managed assets.</p>
       </div>
 
-      <div className="card" style={{ padding: 40, background: '#fff', border: '1px solid #ddd' }}>
+      <div className="card" style={{ padding: 40 }}>
         {msg && <div style={{ marginBottom: 32, padding: '16px', borderRadius: 12, background: msg.type === 'success' ? '#f0fdf4' : '#fef2f2', color: msg.type === 'success' ? '#166534' : '#991b1b', border: `1px solid ${msg.type === 'success' ? '#bbf7d0' : '#fee2e2'}`, fontSize: '0.9rem', fontWeight: 500 }}>{msg.text}</div>}
         <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 24 }}>
            <div className="form-group">

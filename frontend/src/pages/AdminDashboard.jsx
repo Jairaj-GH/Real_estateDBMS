@@ -57,8 +57,8 @@ function SQLConsole() {
   return (
     <div className="sql-console-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 32, animation: 'fadeIn 0.8s' }}>
       <div style={{ gridColumn: 'span 1' }}>
-        <div className="card" style={{ marginBottom: 32, background: '#fff', padding: 0, border: '1px solid #ddd' }}>
-          <div style={{ background: 'var(--bg-soft)', padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee' }}>
+        <div className="card" style={{ marginBottom: 32,  padding: 0 }}>
+          <div style={{  padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee' }}>
             <h3 style={{ color: 'var(--text-main)', fontFamily: 'Inter, sans-serif', fontSize: '1.2rem', fontWeight: 800 }}>Terminal Engine</h3>
             <div style={{ display: 'flex', gap: 12 }}>
               <button className="btn" style={{ padding: '8px 16px', fontSize: '0.65rem' }} onClick={() => setQuery('')}>CLEAR</button>
@@ -67,7 +67,7 @@ function SQLConsole() {
               </button>
             </div>
           </div>
-          <div style={{ padding: 24, background: '#f8fafc' }}>
+          <div style={{ padding: 24, background: 'rgba(0, 0, 0, 0.2)' }}>
             <textarea
               style={{ background: 'transparent', color: 'var(--text-main)', border: 'none', fontFamily: 'monospace', fontSize: '0.95rem', width: '100%', height: 200, resize: 'none', outline: 'none', lineHeight: 1.6 }}
               value={query}
@@ -79,8 +79,8 @@ function SQLConsole() {
         </div>
 
         {result && (
-          <div className="card" style={{ padding: 0, background: '#fff', border: '1px solid #ddd' }}>
-            <div style={{ padding: '24px 32px', background: 'var(--bg-soft)', borderBottom: '1px solid #eee' }}>
+          <div className="card" style={{ padding: 0 }}>
+            <div style={{ padding: '24px 32px',  borderBottom: '1px solid #eee' }}>
               <h3 style={{ fontSize: '1rem', color: 'var(--text-main)', fontWeight: 700 }}>
                 {result.error ? '⚠️ Execution Interrupted' : `Dataset Output (${result.row_count || 0} rows)`}
               </h3>
@@ -112,7 +112,7 @@ function SQLConsole() {
       </div>
 
       <div style={{ gridColumn: 'span 1' }}>
-        <div className="card" style={{ marginBottom: 24, padding: 0, background: '#fff', border: '1px solid #ddd' }}>
+        <div className="card" style={{ marginBottom: 24, padding: 0 }}>
           <div style={{ padding: '24px 32px', borderBottom: '1px solid #eee' }}>
             <h3 style={{ fontSize: '1rem', color: 'var(--text-main)', fontWeight: 700 }}>Predefined Analysis</h3>
           </div>
@@ -127,7 +127,7 @@ function SQLConsole() {
         </div>
 
         {history.length > 0 && (
-          <div className="card" style={{ padding: 0, background: '#fff', border: '1px solid #ddd' }}>
+          <div className="card" style={{ padding: 0 }}>
              <div style={{ padding: '24px 32px', borderBottom: '1px solid #eee' }}>
               <h3 style={{ fontSize: '1rem', color: 'var(--text-main)', fontWeight: 700 }}>Execution Log</h3>
             </div>
@@ -166,7 +166,7 @@ function DBStats() {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, animation: 'fadeIn 0.8s' }}>
       {cards.map(c => (
-        <div key={c.label} className="card" style={{ padding: 40, background: '#fff', border: '1px solid #ddd' }}>
+        <div key={c.label} className="card" style={{ padding: 40 }}>
           <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.05em', marginBottom: 16 }}>{c.label}</div>
           <div style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.04em' }}>{c.value}</div>
           <div style={{ marginTop: 20, fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -225,7 +225,7 @@ function TableBrowser() {
     )
 
     if (!data || !data.results || data.results.length === 0) return (
-      <div style={{ padding: 60, textAlign: 'center', background: '#fff', borderRadius: 24, border: '1px solid #ddd' }}>
+      <div style={{ padding: 60, textAlign: 'center',  borderRadius: 24 }}>
         <div style={{ fontSize: '3rem', marginBottom: 16 }}>📁</div>
         <h3 style={{ color: 'var(--text-main)', marginBottom: 8, fontWeight: 800 }}>Empty Registry</h3>
         <p style={{ color: 'var(--text-muted)', fontWeight: 500 }}>No records found for {table} in the current database view.</p>
@@ -235,8 +235,8 @@ function TableBrowser() {
     const columns = Object.keys(data.results[0])
 
     return (
-      <div className="card" style={{ padding: 0, animation: 'fadeIn 0.5s', background: '#fff', border: '1px solid #ddd' }}>
-        <div style={{ padding: '24px 32px', background: 'var(--bg-soft)', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="card" style={{ padding: 0, animation: 'fadeIn 0.5s' }}>
+        <div style={{ padding: '24px 32px',  borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h3 style={{ color: 'var(--text-main)', fontSize: '1.2rem', fontWeight: 800 }}>{data.table} Master Registry</h3>
             <div style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 800, marginTop: 4 }}>DATABASE DIRECTORY ACCESS COMPLETE</div>
@@ -281,8 +281,8 @@ function TableBrowser() {
           <button key={t} 
             className="btn" 
             style={{ 
-              background: table === t ? 'var(--primary)' : '#fff', 
-              borderColor: table === t ? 'var(--primary)' : '#ddd',
+              background: table === t ? 'var(--primary)' : 'var(--glass-bg)', 
+              borderColor: table === t ? 'var(--primary)' : 'var(--glass-border)',
               color: table === t ? '#fff' : 'var(--text-main)',
               padding: '10px 20px',
               fontSize: '0.75rem',
@@ -322,7 +322,7 @@ function UserManagement() {
       </div>
 
       {showForm && (
-        <div className="card" style={{ marginBottom: 32, padding: 32, background: '#fff', border: '1px solid #ddd' }}>
+        <div className="card" style={{ marginBottom: 32, padding: 32 }}>
           <form style={{ display: 'grid', gap: 20 }} onSubmit={async e => {
             e.preventDefault()
             try { await api.post('/admin/users/', form); fetchUsers(); setShowForm(false); setMsg({ type: 'success', text: 'User authorized.' }) }
@@ -341,7 +341,7 @@ function UserManagement() {
         </div>
       )}
 
-      <div className="card" style={{ padding: 0, background: '#fff', border: '1px solid #ddd' }}>
+      <div className="card" style={{ padding: 0 }}>
         <div className="table-wrap">
           <table>
             <thead>
@@ -352,7 +352,7 @@ function UserManagement() {
                 <tr key={u.id}>
                   <td style={{ color: 'var(--text-main)', fontWeight: 700 }}>{u.full_name || 'Anonymous'}</td>
                   <td style={{ color: 'var(--text-muted)' }}>{u.email}</td>
-                  <td><span style={{ fontSize: '0.65rem', padding: '4px 12px', background: 'var(--bg-soft)', borderRadius: 99, fontWeight: 800, color: 'var(--text-main)', border: '1px solid #eee' }}>{u.role.toUpperCase()}</span></td>
+                  <td><span style={{ fontSize: '0.65rem', padding: '4px 12px',  borderRadius: 99, fontWeight: 800, color: 'var(--text-main)' }}>{u.role.toUpperCase()}</span></td>
                   <td><span style={{ color: u.is_active ? '#166534' : '#991b1b', fontWeight: 800, fontSize: '0.75rem' }}>{u.is_active ? 'ACTIVE' : 'SUSPENDED'}</span></td>
                 </tr>
               ))}

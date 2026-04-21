@@ -6,8 +6,7 @@ const ROLE_REDIRECTS = {
   office: '/office',
   agent: '/agent',
   customer: '/marketplace',
-  admin: '/admin',
-}
+  admin: '/admin' }
 
 const QUICK_LOGINS = [
   { label: 'Office', email: 'office@realestate.com', icon: '🏢' },
@@ -69,8 +68,8 @@ export default function Login() {
         maxWidth: 400, 
         padding: '48px 32px',
         textAlign: 'center',
-        background: '#fff',
-        border: '1px solid #ddd',
+        
+        
         boxShadow: '0 12px 24px rgba(0,0,0,0.1)',
         animation: 'fadeIn 1s ease-out'
       }}>
@@ -94,8 +93,8 @@ export default function Login() {
                 style={{
                   padding: '8px 14px',
                   fontSize: '0.75rem',
-                  background: email === role.email ? 'var(--bg-soft)' : '#fff',
-                  borderColor: email === role.email ? 'var(--primary)' : '#ddd',
+                  background: email === role.email ? 'var(--bg-soft)' : 'var(--glass-bg)',
+                  borderColor: email === role.email ? 'var(--primary)' : 'var(--glass-border)',
                   color: 'var(--text-main)'
                 }}
               >

@@ -9,8 +9,7 @@ const TEAM = [
       'Wrote sample data and seed scripts for testing',
     ],
     icon: '🗄️',
-    color: '#1a56db',
-  },
+    color: '#1a56db' },
   {
     name: 'Team Member 2',
     role: 'Backend Developer',
@@ -21,8 +20,7 @@ const TEAM = [
       'Integrated raw SQL console for admin use',
     ],
     icon: '⚙️',
-    color: '#0e9f6e',
-  },
+    color: '#0e9f6e' },
   {
     name: 'Team Member 3',
     role: 'Frontend Developer',
@@ -33,8 +31,7 @@ const TEAM = [
       'Implemented office reporting with expandable agent sections',
     ],
     icon: '🎨',
-    color: '#7e3af2',
-  },
+    color: '#7e3af2' },
   {
     name: 'Team Member 4',
     role: 'Testing & Documentation',
@@ -45,8 +42,7 @@ const TEAM = [
       'Prepared demo data and user accounts for evaluation',
     ],
     icon: '📋',
-    color: '#ff5a1f',
-  },
+    color: '#ff5a1f' },
 ]
 
 const TECH_STACK = [
@@ -78,7 +74,7 @@ export default function About() {
       </div>
 
       {/* Project Overview */}
-      <div className="card" style={{ marginBottom: 40, padding: 40, background: '#fff', border: '1px solid #ddd' }}>
+      <div className="card" style={{ marginBottom: 40, padding: 40 }}>
         <h3 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.5rem', fontWeight: 800, marginBottom: 24, color: 'var(--text-main)' }}>🏡 Executive Overview</h3>
         <p style={{ lineHeight: 1.6, color: 'var(--text-muted)', marginBottom: 32, fontSize: '1rem', fontWeight: 500 }}>
           This is a full-stack Real Estate Management Intelligence platform focused on the Guwahati luxury market. 
@@ -87,7 +83,7 @@ export default function About() {
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
           {FEATURES.map(f => (
-            <div key={f.title} style={{ padding: 24, background: 'var(--bg-soft)', borderRadius: 16, border: '1px solid #eee' }}>
+            <div key={f.title} style={{ padding: 24,  borderRadius: 16 }}>
               <div style={{ fontSize: '1.8rem', marginBottom: 16 }}>{f.icon}</div>
               <div style={{ fontWeight: 800, marginBottom: 8, color: 'var(--text-main)', fontSize: '1rem' }}>{f.title}</div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5, fontWeight: 500 }}>{f.desc}</div>
@@ -97,15 +93,15 @@ export default function About() {
       </div>
 
       {/* Team */}
-      <div className="card" style={{ marginBottom: 40, padding: 40, background: '#fff', border: '1px solid #ddd' }}>
+      <div className="card" style={{ marginBottom: 40, padding: 40 }}>
         <h3 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.5rem', fontWeight: 800, marginBottom: 32, color: 'var(--text-main)' }}>👥 Operational Personnel</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 32 }}>
           {TEAM.map(member => (
             <div key={member.name} style={{
-              background: '#fff',
+              
               borderRadius: 20, 
               overflow: 'hidden',
-              border: '1px solid #eee',
+              
               transition: 'all 0.3s ease'
             }}>
               <div style={{ padding: 32, background: `linear-gradient(135deg, ${member.color}EE, ${member.color}88)` }}>
@@ -128,11 +124,11 @@ export default function About() {
       </div>
 
       {/* Tech Stack */}
-      <div className="card" style={{ marginBottom: 40, padding: 40, background: '#fff', border: '1px solid #ddd' }}>
+      <div className="card" style={{ marginBottom: 40, padding: 40 }}>
         <h3 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.5rem', fontWeight: 800, marginBottom: 32, color: 'var(--text-main)' }}>🛠️ Engineering Stack</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
           {TECH_STACK.map(t => (
-            <div key={t.name} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 16, background: 'var(--bg-soft)', borderRadius: 16, border: '1px solid #eee' }}>
+            <div key={t.name} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 16,  borderRadius: 16 }}>
               <span style={{ fontSize: '1.5rem' }}>{t.icon}</span>
               <div>
                 <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-main)' }}>{t.name}</div>
@@ -144,7 +140,7 @@ export default function About() {
       </div>
 
       {/* Database Schema Summary */}
-      <div className="card" style={{ padding: 40, background: '#fff', border: '1px solid #ddd' }}>
+      <div className="card" style={{ padding: 40 }}>
         <h3 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.5rem', fontWeight: 800, marginBottom: 32, color: 'var(--text-main)' }}>🗄️ Relational Architecture</h3>
         <div className="table-wrap">
           <table>
@@ -168,7 +164,7 @@ export default function About() {
               ].map(row => (
                 <tr key={row.table}>
                   <td style={{ color: 'var(--text-main)', fontWeight: 800 }}>{row.table}</td>
-                  <td><code style={{ background: 'var(--bg-soft)', color: 'var(--primary)', padding: '4px 8px', borderRadius: 6, fontSize: '.75rem', fontWeight: 700 }}>{row.pk}</code></td>
+                  <td><code style={{  color: 'var(--primary)', padding: '4px 8px', borderRadius: 6, fontSize: '.75rem', fontWeight: 700 }}>{row.pk}</code></td>
                   <td style={{ fontSize: '.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>{row.cols}</td>
                   <td><span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', background: '#fff0f0', padding: '4px 12px', borderRadius: 99, border: '1px solid #ffecec' }}>{row.rel}</span></td>
                 </tr>
@@ -176,7 +172,7 @@ export default function About() {
             </tbody>
           </table>
         </div>
-        <div style={{ marginTop: 32, padding: 20, background: 'var(--bg-soft)', borderRadius: 12, border: '1px solid #eee', fontSize: '.85rem', color: 'var(--text-main)', fontWeight: 500 }}>
+        <div style={{ marginTop: 32, padding: 20,  borderRadius: 12,  fontSize: '.85rem', color: 'var(--text-main)', fontWeight: 500 }}>
           <strong style={{ color: 'var(--primary)', letterSpacing: '0.02em' }}>⚡ ACTIVE TRIGGERS:</strong> <code style={{ color: 'var(--text-muted)' }}>status_sale_sync</code> · <code style={{ color: 'var(--text-muted)' }}>overlap_prevention</code> · <code style={{ color: 'var(--text-muted)' }}>rent_lifecycle_sync</code>
         </div>
       </div>

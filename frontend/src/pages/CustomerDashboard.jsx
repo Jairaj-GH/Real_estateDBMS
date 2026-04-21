@@ -18,7 +18,7 @@ function PropertyDetailModal({ property, onClose }) {
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)' }}>
-      <div className="card" style={{ maxWidth: 800, padding: 0, overflow: 'hidden', animation: 'scaleIn 0.3s cubic-bezier(0.23, 1, 0.32, 1)', background: '#fff' }}>
+      <div className="card" style={{ maxWidth: 800, padding: 0, overflow: 'hidden', animation: 'scaleIn 0.3s cubic-bezier(0.23, 1, 0.32, 1)' }}>
         {!detail ? (
           <div style={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" style={{ borderTopColor: 'var(--primary)' }} /></div>
         ) : (
@@ -53,7 +53,7 @@ function PropertyDetailModal({ property, onClose }) {
                  </div>
                  <div>
                     <h3 style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.05em', marginBottom: 12 }}>REPRESENTATIVE</h3>
-                    <div className="card" style={{ padding: 20, background: 'var(--bg-soft)', border: '1px solid #eee' }}>
+                    <div className="card" style={{ padding: 20 }}>
                        <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.9rem' }}>{detail.agent?.name || 'Guwahati Direct'}</div>
                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 16 }}>{detail.agent?.contact || 'Support Representative'}</div>
                        <button className="btn btn-primary" style={{ width: '100%', fontSize: '0.75rem' }}>REQUEST BRIEFING</button>
@@ -70,8 +70,8 @@ function PropertyDetailModal({ property, onClose }) {
 
 function PropertyCard({ property, onClick }) {
   return (
-    <div className="card" style={{ padding: 0, overflow: 'hidden', background: '#fff' }} onClick={onClick}>
-      <div style={{ height: 200, background: 'var(--bg-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', position: 'relative' }}>
+    <div className="card" style={{ padding: 0, overflow: 'hidden' }} onClick={onClick}>
+      <div style={{ height: 200,  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', position: 'relative' }}>
          {TYPE_ICONS[property.type] || '🏡'}
          <div style={{ position: 'absolute', top: 16, right: 16, background: 'var(--primary)', color: '#fff', fontSize: '0.6rem', fontWeight: 800, padding: '4px 12px', borderRadius: 99, boxShadow: '0 4px 8px rgba(255, 56, 92, 0.2)' }}>
             {property.current_status.toUpperCase()}
@@ -137,7 +137,7 @@ export default function CustomerDashboard() {
         <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', fontWeight: 500 }}>Curating {total} high-density assets for your portfolio.</p>
       </div>
 
-      <div className="card" style={{ marginBottom: 48, background: '#fff', padding: 32, border: '1px solid #ddd' }}>
+      <div className="card" style={{ marginBottom: 48,  padding: 32 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 20 }}>
           <div className="form-group">
             <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.05em', marginBottom: 10, display: 'block' }}>WHERE</label>
@@ -170,7 +170,7 @@ export default function CustomerDashboard() {
       {loading ? (
         <div style={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" style={{ borderTopColor: 'var(--primary)' }} /></div>
       ) : properties.length === 0 ? (
-        <div className="card" style={{ padding: 100, textAlign: 'center', background: '#fff', border: '1px solid #eee' }}>
+        <div className="card" style={{ padding: 100, textAlign: 'center' }}>
           <div style={{ fontSize: '3rem', marginBottom: 16 }}>🏡</div>
           <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', fontWeight: 500 }}>No results found in current registry parameters.</p>
         </div>

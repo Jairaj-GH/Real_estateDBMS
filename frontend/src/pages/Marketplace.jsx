@@ -27,14 +27,14 @@ function PropertyDetailModal({ property, onClose }) {
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)' }}>
-      <div className="modal card" onClick={e => e.stopPropagation()} style={{ maxWidth: 1000, borderRadius: 32, background: '#fff' }}>
+      <div className="modal card" onClick={e => e.stopPropagation()} style={{ maxWidth: 1000, borderRadius: 32 }}>
         <div className="modal-header" style={{ padding: '24px 40px', borderBottom: '1px solid rgba(0,0,0,0.05)', background: 'transparent' }}>
           <h2 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.5rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>Property Details</h2>
           <button className="btn" onClick={onClose} style={{ padding: 8, minWidth: 40, height: 40, borderRadius: '50%' }}>✕</button>
         </div>
         <div className="modal-body" style={{ padding: '40px' }}>
           <div className="detail-grid">
-            <div style={{ borderRadius: 20, overflow: 'hidden', height: 400, background: 'var(--bg-soft)', border: '1px solid rgba(0,0,0,0.05)' }}>
+            <div style={{ borderRadius: 20, overflow: 'hidden', height: 400,  border: '1px solid rgba(0,0,0,0.05)' }}>
               <img 
                 src={p1} 
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -46,11 +46,11 @@ function PropertyDetailModal({ property, onClose }) {
               <p style={{ color: 'var(--primary)', fontSize: '1rem', fontWeight: 700, marginBottom: 32 }}>{detail.locality?.toUpperCase()} · {detail.city?.toUpperCase()}</p>
               
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 32 }}>
-                <div style={{ padding: 20, background: 'var(--bg-soft)', borderRadius: 16, border: '1px solid rgba(0,0,0,0.02)' }}>
+                <div style={{ padding: 20,  borderRadius: 16, border: '1px solid rgba(0,0,0,0.02)' }}>
                   <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: 4 }}>VALUATION</div>
                   <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>{fmt(detail.listed_price)}</div>
                 </div>
-                <div style={{ padding: 20, background: 'var(--bg-soft)', borderRadius: 16, border: '1px solid rgba(0,0,0,0.02)' }}>
+                <div style={{ padding: 20,  borderRadius: 16, border: '1px solid rgba(0,0,0,0.02)' }}>
                   <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: 4 }}>DIMENSIONS</div>
                   <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>{detail.size} <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>SQFT</span></div>
                 </div>
@@ -81,7 +81,7 @@ const PropertyCard = React.memo(({ property, onClick }) => {
     }}>
       <div style={{ 
         height: 240, 
-        background: 'var(--bg-soft)', 
+         
         borderRadius: 16, 
         position: 'relative',
         overflow: 'hidden'
@@ -204,7 +204,7 @@ export default function Marketplace() {
         </div>
       </div>
 
-      <div className="card" style={{ padding: '32px', marginBottom: 48, background: '#fff', border: '1px solid #ddd', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+      <div className="card" style={{ padding: '32px', marginBottom: 48 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 20, alignItems: 'flex-end' }}>
           <div className="form-group">
             <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.05em', marginBottom: 10, display: 'block' }}>WHERE</label>

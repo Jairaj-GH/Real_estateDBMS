@@ -29,24 +29,24 @@ function OfficeOverview() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginBottom: 48 }}>
-        <div className="card" style={{ padding: 40, background: '#fff', border: '1px solid #ddd' }}>
+        <div className="card" style={{ padding: 40 }}>
           <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>ASSET ADVISORS</div>
           <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>{totalAgents}</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Active Professional Force</div>
         </div>
-        <div className="card" style={{ padding: 40, background: '#fff', border: '1px solid #ddd' }}>
+        <div className="card" style={{ padding: 40 }}>
           <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>CAPITAL APPRECIATION</div>
           <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>{fmt(totalSalesVal)}</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Gross Transactional Value</div>
         </div>
-        <div className="card" style={{ padding: 40, background: '#fff', border: '1px solid #ddd' }}>
+        <div className="card" style={{ padding: 40 }}>
           <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>MANAGED ESTATES</div>
           <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>{totalRents}</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Active Rental Portfolio</div>
         </div>
       </div>
 
-      <div className="card" style={{ padding: '48px', background: 'var(--bg-soft)', color: 'var(--text-main)', textAlign: 'center', border: '1px solid #eee' }}>
+      <div className="card" style={{ padding: '48px',  color: 'var(--text-main)', textAlign: 'center' }}>
         <div style={{ fontSize: '2.5rem', marginBottom: 20 }}>🏛️</div>
         <h2 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.5rem', fontWeight: 800, marginBottom: 16 }}>Proprietary Command</h2>
         <p style={{ maxWidth: 700, margin: '0 auto', color: 'var(--text-muted)', fontSize: '1rem', lineHeight: 1.6, fontWeight: 500 }}>
@@ -78,8 +78,8 @@ function SalesReport() {
       </div>
 
       {data.map(agent => (
-        <div key={agent.agent_id} className="card" style={{ marginBottom: 24, padding: 0, background: '#fff', border: '1px solid #ddd' }}>
-           <div style={{ cursor: 'pointer', padding: '32px 40px', background: 'var(--bg-soft)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} onClick={() => toggle(agent.agent_id)}>
+        <div key={agent.agent_id} className="card" style={{ marginBottom: 24, padding: 0 }}>
+           <div style={{ cursor: 'pointer', padding: '32px 40px',  display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} onClick={() => toggle(agent.agent_id)}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
               <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.2rem', color: '#fff' }}>
                 {agent.agent_name[0]}
@@ -164,8 +164,8 @@ function RentalReport() {
       </div>
 
       {data.map(agent => (
-        <div key={agent.agent_id} className="card" style={{ marginBottom: 24, padding: 0, background: '#fff', border: '1px solid #ddd' }}>
-           <div style={{ cursor: 'pointer', padding: '32px 40px', background: 'var(--bg-soft)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} onClick={() => toggle(agent.agent_id)}>
+        <div key={agent.agent_id} className="card" style={{ marginBottom: 24, padding: 0 }}>
+           <div style={{ cursor: 'pointer', padding: '32px 40px',  display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} onClick={() => toggle(agent.agent_id)}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
               <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.2rem', color: '#fff' }}>
                 {agent.agent_name[0]}

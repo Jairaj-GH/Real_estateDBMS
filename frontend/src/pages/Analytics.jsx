@@ -15,7 +15,7 @@ const COLORS = ['#FF385C', '#00A699', '#FC642D', '#484848', '#767676', '#E07912'
 // ── KPI Card ────────────────────────────────────────────
 function KpiCard({ label, value, sub, icon, color }) {
   return (
-    <div className="card" style={{ padding: '28px 32px', background: '#fff', border: '1px solid #e5e5e5', display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div className="card" style={{ padding: '28px 32px',   display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: '1.6rem' }}>{icon}</span>
         {sub && (
@@ -23,8 +23,7 @@ function KpiCard({ label, value, sub, icon, color }) {
             fontSize: '0.7rem', fontWeight: 800, padding: '3px 10px', borderRadius: 99,
             background: color === 'green' ? '#f0fdf4' : color === 'red' ? '#fef2f2' : '#f0f9ff',
             color: color === 'green' ? '#166534' : color === 'red' ? '#991b1b' : '#0c4a6e',
-            border: `1px solid ${color === 'green' ? '#bbf7d0' : color === 'red' ? '#fee2e2' : '#bae6fd'}`,
-          }}>{sub}</span>
+            border: `1px solid ${color === 'green' ? '#bbf7d0' : color === 'red' ? '#fee2e2' : '#bae6fd'}` }}>{sub}</span>
         )}
       </div>
       <div style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{label}</div>
@@ -37,7 +36,7 @@ function KpiCard({ label, value, sub, icon, color }) {
 function HBarChart({ data, title, formatValue, subtitle }) {
   const maxVal = Math.max(...data.map(d => d.value), 1)
   return (
-    <div className="card" style={{ padding: '28px 32px', background: '#fff', border: '1px solid #e5e5e5' }}>
+    <div className="card" style={{ padding: '28px 32px' }}>
       <h3 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.1rem', fontWeight: 800, marginBottom: 4, color: 'var(--text-main)' }}>{title}</h3>
       {subtitle && <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 20, fontWeight: 500 }}>{subtitle}</p>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -51,8 +50,7 @@ function HBarChart({ data, title, formatValue, subtitle }) {
                 background: `linear-gradient(90deg, ${COLORS[i % COLORS.length]}, ${COLORS[i % COLORS.length]}cc)`,
                 borderRadius: 6,
                 transition: 'width 1.2s cubic-bezier(0.23, 1, 0.32, 1)',
-                display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8,
-              }}>
+                display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8 }}>
                 <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
                   {formatValue ? formatValue(d.value) : d.value}
                 </span>
@@ -72,14 +70,13 @@ function VBarChart({ data, title, formatValue, subtitle }) {
   // Ensure minimum bar width of 48px, allowing scroll for many items
   const needsScroll = barCount > 8
   return (
-    <div className="card" style={{ padding: '28px 32px', background: '#fff', border: '1px solid #e5e5e5', display: 'flex', flexDirection: 'column' }}>
+    <div className="card" style={{ padding: '28px 32px',   display: 'flex', flexDirection: 'column' }}>
       <h3 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.1rem', fontWeight: 800, marginBottom: 4, color: 'var(--text-main)' }}>{title}</h3>
       {subtitle && <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 20, fontWeight: 500 }}>{subtitle}</p>}
       <div style={{ flex: 1, overflowX: needsScroll ? 'auto' : 'hidden', paddingBottom: needsScroll ? 8 : 0 }}>
         <div style={{
           display: 'flex', alignItems: 'flex-end', gap: 6, paddingTop: 24, minHeight: 200,
-          minWidth: needsScroll ? barCount * 64 : 'auto',
-        }}>
+          minWidth: needsScroll ? barCount * 64 : 'auto' }}>
           {data.map((d, i) => (
             <div key={i} style={{ flex: needsScroll ? '0 0 56px' : 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
@@ -92,8 +89,7 @@ function VBarChart({ data, title, formatValue, subtitle }) {
                 borderRadius: '6px 6px 2px 2px',
                 transition: 'height 1.2s cubic-bezier(0.23, 1, 0.32, 1)',
                 minHeight: 4,
-                boxShadow: `0 4px 12px ${COLORS[i % COLORS.length]}30`,
-              }} />
+                boxShadow: `0 4px 12px ${COLORS[i % COLORS.length]}30` }} />
               <span style={{ fontSize: '0.58rem', fontWeight: 700, color: 'var(--text-muted)', textAlign: 'center', whiteSpace: 'nowrap', maxWidth: 56, overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.label}</span>
             </div>
           ))}
@@ -124,7 +120,7 @@ function DonutChart({ data, title, subtitle }) {
   }
 
   return (
-    <div className="card" style={{ padding: '28px 32px', background: '#fff', border: '1px solid #e5e5e5' }}>
+    <div className="card" style={{ padding: '28px 32px' }}>
       <h3 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.1rem', fontWeight: 800, marginBottom: 4, color: 'var(--text-main)' }}>{title}</h3>
       {subtitle && <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 16, fontWeight: 500 }}>{subtitle}</p>}
       <div style={{ display: 'flex', alignItems: 'center', gap: 32, flexWrap: 'wrap' }}>
@@ -252,7 +248,7 @@ export default function Analytics() {
       </div>
 
       {/* Recent Transactions Table */}
-      <div className="card" style={{ padding: 0, background: '#fff', border: '1px solid #e5e5e5', marginBottom: 20 }}>
+      <div className="card" style={{ padding: 0,   marginBottom: 20 }}>
         <div style={{ padding: '24px 32px', borderBottom: '1px solid #eee' }}>
           <h3 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>Recent Transactions</h3>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500, marginTop: 2 }}>Last {recent_transactions.length} recorded sales</p>
@@ -288,7 +284,7 @@ export default function Analytics() {
       </div>
 
       {/* Agent Details Table */}
-      <div className="card" style={{ padding: 0, background: '#fff', border: '1px solid #e5e5e5' }}>
+      <div className="card" style={{ padding: 0 }}>
         <div style={{ padding: '24px 32px', borderBottom: '1px solid #eee' }}>
           <h3 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>Agent Leaderboard</h3>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500, marginTop: 2 }}>Top {agent_performance.length} agents ranked by total revenue</p>
@@ -318,8 +314,7 @@ export default function Analytics() {
                       fontWeight: 800, fontSize: '0.75rem', padding: '3px 10px', borderRadius: 99,
                       background: a.rating >= 4 ? '#f0fdf4' : a.rating >= 3 ? '#fffbeb' : '#fef2f2',
                       color: a.rating >= 4 ? '#166534' : a.rating >= 3 ? '#92400e' : '#991b1b',
-                      border: `1px solid ${a.rating >= 4 ? '#bbf7d0' : a.rating >= 3 ? '#fde68a' : '#fecaca'}`,
-                    }}>
+                      border: `1px solid ${a.rating >= 4 ? '#bbf7d0' : a.rating >= 3 ? '#fde68a' : '#fecaca'}` }}>
                       ★ {a.rating.toFixed(1)}
                     </span>
                   </td>
