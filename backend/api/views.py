@@ -817,3 +817,75 @@ class ConfirmTransactionView(APIView):
 
         except Exception as e:
             return Response({'error': f"Processing failed: {str(e)}"}, status=500)
+
+
+class ConfirmTransactionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, property_id):
+        from datetime import date
+        from django.db import transaction
+        try:
+            prop = Property.objects.get(property_id=property_id)
+            if prop.current_status != 'available':
+                return Response({'error': 'Property is no longer available.'}, status=400)
+
+            user = request.user
+            # Identify customer role and entity
+            buyer = Buyer.objects.filter(email=user.email).first()
+            tenant = Tenant.objects.filter(email=user.email).first()
+
+            if not buyer and not tenant:
+                return Response({'error': 'Customer record not found. Please ensure your registration is complete.'}, status=404)
+
+            agent = prop.agent
+            
+            with transaction.atomic():
+                if buyer:
+                    # Logic for Sale
+                    days = (date.today() - prop.listed_date).days
+                    Sale.objects.create(
+                        property=prop,
+                        buyer=buyer,
+                        agent=agent,
+                        sale_date=date.today(),
+                        final_price=prop.listed_price,
+                        days_on_market=max(1, days)
+                    )
+                    msg = f"Purchase confirmed for {prop.address}."
+                elif tenant:
+                    # Logic for Rent
+                    Rent.objects.create(
+                        property=prop,
+                        tenant=tenant,
+                        agent=agent,
+                        start_date=date.today(),
+                        end_date=date.today().replace(year=date.today().year + 1),
+                        monthly_rent=prop.listed_price / 100 if prop.listed_price > 100000 else prop.listed_price
+                    )
+                    msg = f"Rental confirmed for {prop.address}."
+
+                # Update Property Status (Triggers handle this too, but we ensure consistency)
+                prop.current_status = 'sold' if buyer else 'rented'
+                prop.save()
+
+                # Update Agent Performance
+                agent.completed_deals += 1
+                agent.save()
+
+                # Notify Agent
+                Notification.objects.create(
+                    sender_id=user.id,
+                    receiver_id=agent.agent_id,
+                    property=prop,
+                    type='buy_request' if buyer else 'rent_request',
+                    status='approved',
+                    message=f"TRANSACTION COMPLETE: {user.get_full_name() or user.username} has finalized the deal."
+                )
+
+            return Response({'message': msg})
+
+        except Property.DoesNotExist:
+            return Response({'error': 'Property not found.'}, status=404)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)

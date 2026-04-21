@@ -13,8 +13,12 @@ const TYPE_ICONS = {
   Apartment: '🏢', House: '🏠', Villa: '🏰', Plot: '🌿', Commercial: '🏪', Studio: '🛏️'
 }
 
-function PropertyDetailModal({ property, onClose }) {
+function PropertyDetailModal({ property, onClose, onRefresh }) {
+  const { user } = useAuth()
   const [detail, setDetail] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
     api.get(`/properties/${property.property_id}/`).then(r => setDetail(r.data))
@@ -57,9 +61,35 @@ function PropertyDetailModal({ property, onClose }) {
                 </div>
               </div>
 
-              <div style={{ fontSize: '0.95rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+              <div style={{ fontSize: '0.95rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 32 }}>
                 {detail.description || 'Seamlessly integrated within its prestigious surroundings, this asset offers unrivaled elegance.'}
               </div>
+
+              {user?.role === 'customer' && detail.current_status === 'available' && (
+                <div style={{ borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: 32 }}>
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={async () => {
+                      setLoading(true); setError(''); setMessage('');
+                      try {
+                        const r = await api.post(`/properties/${property.property_id}/transaction/`);
+                        setMessage(r.data.message);
+                        setTimeout(() => { onClose(); if(onRefresh) onRefresh(); }, 2000);
+                      } catch (err) {
+                        setError(err.response?.data?.error || 'Transaction failed');
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    style={{ width: '100%', height: 56, borderRadius: 16, fontSize: '1rem', fontWeight: 700 }}
+                    disabled={loading}
+                  >
+                    {loading ? 'PROCESSING...' : (detail.listed_price > 100000 ? 'FINALIZE PURCHASE' : 'FINALIZE RENTAL')}
+                  </button>
+                  {message && <p style={{ color: '#059669', fontSize: '0.85rem', fontWeight: 600, marginTop: 12, textAlign: 'center' }}>✓ {message}</p>}
+                  {error && <p style={{ color: '#dc2626', fontSize: '0.85rem', fontWeight: 600, marginTop: 12, textAlign: 'center' }}>✕ {error}</p>}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -296,7 +326,7 @@ export default function Marketplace() {
         </div>
       )}
 
-      {selected && <PropertyDetailModal property={selected} onClose={() => setSelected(null)} />}
+      {selected && <PropertyDetailModal property={selected} onClose={() => setSelected(null)} onRefresh={fetchProps} />}
     </div>
   )
 }

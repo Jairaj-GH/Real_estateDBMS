@@ -9,6 +9,8 @@ urlpatterns = [
     # Properties
     path('properties/', views.PropertyListView.as_view(), name='property-list'),
     path('properties/meta/', views.PropertyMetaView.as_view(), name='property-meta'),
+    path('properties/<int:property_id>/transaction/', views.ConfirmTransactionView.as_view(), name='property-transaction'),
+    path('properties/<int:property_id>/inquire/', views.PropertyInquiryView.as_view(), name='property-inquire'),
     path('properties/<int:property_id>/', views.PropertyDetailView.as_view(), name='property-detail'),
 
     # Agents
@@ -47,6 +49,5 @@ urlpatterns = [
     # Notifications & Workflows
     path('register/', views.RegisterView.as_view(), name='register'),
     path('notifications/', views.NotificationListView.as_view(), name='notification-list'),
-    path('properties/<int:property_id>/inquire/', views.PropertyInquiryView.as_view(), name='property-inquire'),
     path('notifications/<int:notification_id>/confirm/', views.ConfirmTransactionView.as_view(), name='notification-confirm'),
 ]
