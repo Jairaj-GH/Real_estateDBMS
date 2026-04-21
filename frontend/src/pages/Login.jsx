@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import api from '../api/axios'
 
 const ROLE_REDIRECTS = {
   office: '/office',
@@ -33,12 +34,37 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
+  const [isRegistering, setIsRegistering] = useState(false)
+  
+  // Registration specific fields
+  const [regData, setRegData] = useState({ id: '', name: '', phone: '', userType: 'buyer' })
 
   const handleSubmit = async e => {
     e.preventDefault()
     setError('')
+    setSuccess('')
     setLoading(true)
+    
+    if (isRegistering) {
+      try {
+        await api.post('/register/', {
+          ...regData,
+          email,
+          password,
+          role: regData.userType
+        })
+        setSuccess('Account created successfully! You can now sign in.')
+        setIsRegistering(false)
+      } catch (err) {
+        setError(err.response?.data?.error || err.response?.data?.detail || 'Registration failed. Please try again.')
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
     try {
       const user = await login(email, password)
       navigate(ROLE_REDIRECTS[user.role] || '/marketplace')
@@ -73,61 +99,108 @@ export default function Login() {
         boxShadow: '0 12px 24px rgba(0,0,0,0.1)',
         animation: 'fadeIn 1s ease-out'
       }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 32, letterSpacing: '-0.03em', color: 'var(--text-main)' }}>Sign In</h1>
+        <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 8, letterSpacing: '-0.03em', color: 'var(--text-main)' }}>
+          {isRegistering ? 'Join the Elite' : 'Sign In'}
+        </h1>
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 32 }}>
+          {isRegistering ? 'Create your proprietary account.' : 'Access your real estate portfolio.'}
+        </p>
 
         {error && (
           <div style={{ background: '#fef2f2', padding: '12px', borderRadius: 12, marginBottom: 24, fontSize: '0.85rem', border: '1px solid #fee2e2', color: '#991b1b' }}>
             {error}
           </div>
         )}
-
-        <div style={{ marginBottom: 28 }}>
-          <p style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: 16, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Select Role Credentials</p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
-            {QUICK_LOGINS.map(role => (
-              <button
-                key={role.label}
-                onClick={async () => {
-                  setEmail(role.email)
-                  setPassword(role.password)
-                  // Optional: triggered immediate login if desired
-                  // However, filling the fields and letting user click Sign In is safer
-                  // But the user complained about 'not working', so let's make it instant.
-                  setError('')
-                  setLoading(true)
-                  try {
-                    const user = await login(role.email, role.password)
-                    navigate(ROLE_REDIRECTS[user.role] || '/marketplace')
-                  } catch (err) {
-                    setError('Demo login failed. Check if setup_demo.py was run.')
-                  } finally {
-                    setLoading(false)
-                  }
-                }}
-                type="button"
-                className="btn login-btn-jelly"
-                style={{
-                  padding: '8px 14px',
-                  fontSize: '0.75rem',
-                  background: email === role.email ? 'var(--bg-soft)' : 'var(--glass-bg)',
-                  borderColor: email === role.email ? 'var(--primary)' : 'var(--glass-border)',
-                  color: 'var(--text-main)'
-                }}
-              >
-                <span style={{ fontSize: '1rem' }}>{role.icon}</span>
-                <span>{role.label}</span>
-              </button>
-            ))}
+        {success && (
+          <div style={{ background: '#f0fdf4', padding: '12px', borderRadius: 12, marginBottom: 24, fontSize: '0.85rem', border: '1px solid #bbf7d0', color: '#166534' }}>
+            {success}
           </div>
-        </div>
+        )}
+
+        {!isRegistering && (
+          <div style={{ marginBottom: 28 }}>
+            <p style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: 16, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Select Role Credentials</p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
+              {QUICK_LOGINS.map(role => (
+                <button
+                  key={role.label}
+                  onClick={async () => {
+                    setEmail(role.email)
+                    setPassword(role.password)
+                    setError('')
+                    setSuccess('')
+                    setLoading(true)
+                    try {
+                      const user = await login(role.email, role.password)
+                      navigate(ROLE_REDIRECTS[user.role] || '/marketplace')
+                    } catch (err) {
+                      setError('Demo login failed. Check if setup_demo.py was run.')
+                    } finally {
+                      setLoading(false)
+                    }
+                  }}
+                  type="button"
+                  className="btn login-btn-jelly"
+                  style={{
+                    padding: '8px 14px',
+                    fontSize: '0.75rem',
+                    background: email === role.email ? 'var(--bg-soft)' : 'var(--glass-bg)',
+                    borderColor: email === role.email ? 'var(--primary)' : 'var(--glass-border)',
+                    color: 'var(--text-main)'
+                  }}
+                >
+                  <span style={{ fontSize: '1rem' }}>{role.icon}</span>
+                  <span>{role.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {isRegistering && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+               <input
+                className="form-control"
+                placeholder="Database ID"
+                type="number"
+                value={regData.id}
+                onChange={e => setRegData({...regData, id: e.target.value})}
+                required
+                style={{ height: 50, borderRadius: 12 }}
+              />
+              <div style={{ display: 'flex', background: 'var(--glass-bg)', borderRadius: 12, padding: 4 }}>
+                <button 
+                  type="button"
+                  onClick={() => setRegData({...regData, userType: 'buyer'})}
+                  style={{ flex: 1, border: 'none', background: regData.userType === 'buyer' ? 'var(--primary)' : 'transparent', color: regData.userType === 'buyer' ? '#fff' : 'var(--text-main)', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}
+                >BUYER</button>
+                <button 
+                  type="button"
+                  onClick={() => setRegData({...regData, userType: 'tenant'})}
+                  style={{ flex: 1, border: 'none', background: regData.userType === 'tenant' ? 'var(--primary)' : 'transparent', color: regData.userType === 'tenant' ? '#fff' : 'var(--text-main)', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}
+                >TENANT</button>
+              </div>
+            </div>
+          )}
+
+          {isRegistering && (
+             <input
+              className="form-control"
+              placeholder="Full Legal Name"
+              value={regData.name}
+              onChange={e => setRegData({...regData, name: e.target.value})}
+              required
+              style={{ height: 56, borderRadius: 12 }}
+            />
+          )}
+
           {/* Email / Username Input */}
           <div style={{ position: 'relative' }}>
             <input
               type="email"
               className="form-control"
-              placeholder="Username / Email"
+              placeholder={isRegistering ? "Email Address" : "Username / Email"}
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
@@ -138,12 +211,23 @@ export default function Login() {
             </div>
           </div>
 
+          {isRegistering && (
+             <input
+              className="form-control"
+              placeholder="Primary Phone Number"
+              value={regData.phone}
+              onChange={e => setRegData({...regData, phone: e.target.value})}
+              required
+              style={{ height: 56, borderRadius: 12 }}
+            />
+          )}
+
           {/* Password Input */}
           <div style={{ position: 'relative' }}>
             <input
               type="password"
               className="form-control"
-              placeholder="Password"
+              placeholder={isRegistering ? "Secure Password" : "Password"}
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
@@ -161,9 +245,23 @@ export default function Login() {
             className="btn btn-primary login-btn-jelly"
             style={{ padding: '16px', borderRadius: 12, marginTop: 8, width: '100%', fontSize: '1rem' }}
           >
-            {loading ? 'Authenticating...' : 'Sign In'}
+            {loading ? 'Processing...' : (isRegistering ? 'Register Now' : 'Sign In')}
           </button>
         </form>
+
+        <div style={{ marginTop: 24, fontSize: '0.85rem' }}>
+          <button 
+            type="button" 
+            onClick={() => {
+              setIsRegistering(!isRegistering)
+              setError('')
+              setSuccess('')
+            }}
+            style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer' }}
+          >
+            {isRegistering ? 'Already have an account? Sign In' : "Don't have an account? Register as Customer"}
+          </button>
+        </div>
       </div>
 
       <style>{`

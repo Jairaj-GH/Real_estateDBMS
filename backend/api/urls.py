@@ -45,6 +45,7 @@ urlpatterns = [
     path('admin/users/<int:user_id>/', views.AdminUserDetailView.as_view(), name='admin-user-detail'),
 
     # Notifications & Workflows
+    path('register/', views.RegisterView.as_view(), name='register'),
     path('notifications/', views.NotificationListView.as_view(), name='notification-list'),
     path('properties/<int:property_id>/inquire/', views.PropertyInquiryView.as_view(), name='property-inquire'),
     path('notifications/<int:notification_id>/confirm/', views.ConfirmTransactionView.as_view(), name='notification-confirm'),

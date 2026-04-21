@@ -628,6 +628,76 @@ class AnalyticsView(APIView):
         })
 
 
+class RegisterView(APIView):
+    permission_classes = [] # Allow anyone to register
+
+    def post(self, request):
+        from django.db import transaction
+        
+        try:
+            data = request.data
+            role_choice = data.get('role', 'buyer')
+            cid = data.get('id')
+            email = data.get('email')
+            password = data.get('password')
+            name = data.get('name')
+            phone = data.get('phone')
+
+            if not all([cid, email, password, name]):
+                return Response({'error': 'All fields (ID, Email, Password, Name) are required.'}, status=400)
+
+            with transaction.atomic():
+                if User.objects.filter(email=email).exists():
+                    return Response({'error': 'Account with this email already exists.'}, status=400)
+
+                # Check for existing ID in specific table
+                if role_choice == 'buyer':
+                    if Buyer.objects.filter(buyer_id=cid).exists():
+                        return Response({'error': f'Buyer ID {cid} is already taken.'}, status=400)
+                else:
+                    if Tenant.objects.filter(tenant_id=cid).exists():
+                        return Response({'error': f'Tenant ID {cid} is already taken.'}, status=400)
+
+                # 1. Create Django User
+                user = User.objects.create_user(
+                    username=email,
+                    email=email,
+                    password=password,
+                    first_name=name.split()[0] if ' ' in name else name,
+                    last_name=name.split()[1] if ' ' in name else ''
+                )
+
+                # 2. Update UserProfile (Created automatically by signals.py)
+                profile, _ = UserProfile.objects.get_or_create(user=user)
+                profile.role = 'customer'
+                profile.save()
+
+                # 3. Create record in Buyer/Tenant table
+                if role_choice == 'buyer':
+                    Buyer.objects.create(
+                        buyer_id=cid,
+                        name=name,
+                        phone=phone,
+                        email=email
+                    )
+                else:
+                    Tenant.objects.create(
+                        tenant_id=cid,
+                        name=name,
+                        phone=phone,
+                        email=email
+                    )
+
+            return Response({'message': 'Registration successful! You can now sign in.'}, status=201)
+
+        except Exception as e:
+            # transaction.atomic() handles rollback automatically on exception
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Registration failed: {str(e)}", exc_info=True)
+            return Response({'error': str(e)}, status=400)
+
+
 # ─── New Workflow Views ───────────────────────────────────────────────────
 
 class PropertyInquiryView(APIView):
