@@ -31,6 +31,7 @@ export function AuthProvider({ children }) {
       full_name: payload.full_name,
       role: payload.role,
       agent_id: payload.agent_id,
+      customer_type: payload.customer_type,
     })
     setLoading(false)
   }, [])
@@ -48,6 +49,7 @@ export function AuthProvider({ children }) {
       full_name: payload.full_name,
       role: payload.role,
       agent_id: payload.agent_id,
+      customer_type: payload.customer_type,
     }
     setUser(userObj)
     return userObj

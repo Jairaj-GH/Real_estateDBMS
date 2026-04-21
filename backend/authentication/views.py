@@ -26,17 +26,29 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             profile = user.profile
             token['role'] = profile.role
             token['agent_id'] = profile.agent_id
+            
+            customer_type = None
+            if profile.role == 'customer':
+                from api.models import Buyer, Tenant
+                if Tenant.objects.filter(email=user.email).exists():
+                    customer_type = 'tenant'
+                elif Buyer.objects.filter(email=user.email).exists():
+                    customer_type = 'buyer'
+            token['customer_type'] = customer_type
+            
         except AttributeError:
             # This should not happen due to auto-profile creation signal,
             # but we handle it gracefully as a safety measure
             logger.warning(f"UserProfile missing for user {user.email}. This indicates a signal handler failure.")
             token['role'] = 'customer'
             token['agent_id'] = None
+            token['customer_type'] = None
         except Exception as e:
             # Log unexpected errors but fail gracefully
             logger.error(f"Error accessing UserProfile for user {user.email}: {str(e)}")
             token['role'] = 'customer'
             token['agent_id'] = None
+            token['customer_type'] = None
         
         return token
 
@@ -85,6 +97,14 @@ class CurrentUserView(APIView):
         else:
             profile = user.profile
         
+        customer_type = None
+        if profile.role == 'customer':
+            from api.models import Buyer, Tenant
+            if Tenant.objects.filter(email=user.email).exists():
+                customer_type = 'tenant'
+            elif Buyer.objects.filter(email=user.email).exists():
+                customer_type = 'buyer'
+
         return Response({
             'id': user.id,
             'username': user.username,
@@ -92,4 +112,5 @@ class CurrentUserView(APIView):
             'full_name': user.get_full_name() or user.username,
             'role': profile.role,
             'agent_id': profile.agent_id,
+            'customer_type': customer_type,
         })

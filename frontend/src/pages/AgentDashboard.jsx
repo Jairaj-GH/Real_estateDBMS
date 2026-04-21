@@ -7,11 +7,11 @@ function fmt(n) {
   return Number(n).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })
 }
 
-function AgentOverview({ data }) {
+function AgentOverview({ data, user }) {
   return (
     <div style={{ animation: 'fadeIn 0.8s ease-out' }}>
       <div style={{ marginBottom: 40 }}>
-        <h1 style={{ fontFamily: 'Inter, sans-serif', fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 800, color: 'var(--text-main)', marginBottom: 8, letterSpacing: '-0.04em' }}>Agent Intelligence</h1>
+        <h1 style={{ fontFamily: 'Inter, sans-serif', fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 800, color: 'var(--text-main)', marginBottom: 8, letterSpacing: '-0.04em' }}>Hello, {user?.full_name || user?.username}</h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', fontWeight: 500 }}>Your personal performance metrics and daily briefing.</p>
       </div>
 
@@ -282,6 +282,7 @@ function MarkSold({ agentId, onUpdate }) {
 function MarkRented({ agentId, onUpdate }) {
   const [properties, setProperties] = useState([])
   const [tenants, setTenants] = useState([])
+  const [notifs, setNotifs] = useState([])
   const [form, setForm] = useState({ property: '', tenant: '', start_date: new Date().toISOString().split('T')[0], end_date: '', monthly_rent: '' })
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState(null)
@@ -289,9 +290,30 @@ function MarkRented({ agentId, onUpdate }) {
   useEffect(() => {
     api.get(`/properties/?status=available&agent_id=${agentId}`).then(r => setProperties(r.data.results || r.data))
     api.get('/tenants/').then(r => setTenants(r.data.results || r.data))
+    api.get('/notifications/').then(r => setNotifs(r.data.results || r.data))
   }, [agentId])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  useEffect(() => {
+    if (!form.property || !form.tenant) return;
+    const tnt = tenants.find(t => t.tenant_id == form.tenant);
+    if (!tnt) return;
+    // Find the most recent pending rent_request that actually contains dates
+    const n = notifs.find(x => 
+      x.property == form.property && 
+      x.sender_name.toLowerCase() === tnt.email.toLowerCase() && 
+      x.type === 'rent_request' && 
+      x.status === 'pending' &&
+      x.message && x.message.includes('Requested Period:')
+    );
+    if (n && n.message) {
+      const match = n.message.match(/Requested Period:\s*([\d-]+)\s*to\s*([\d-]+)/);
+      if (match) {
+        setForm(f => ({ ...f, start_date: match[1], end_date: match[2] }));
+      }
+    }
+  }, [form.property, form.tenant, tenants, notifs]);
 
   const handleSubmit = async e => {
     e.preventDefault()
@@ -302,6 +324,7 @@ function MarkRented({ agentId, onUpdate }) {
       setForm({ property: '', tenant: '', start_date: new Date().toISOString().split('T')[0], end_date: '', monthly_rent: '' })
       onUpdate?.()
       api.get(`/properties/?status=available&agent_id=${agentId}`).then(r => setProperties(r.data.results || r.data))
+      api.get('/notifications/').then(r => setNotifs(r.data.results || r.data))
     } catch (e) {
       const d = e.response?.data
       let errMsg = 'Charter rejected.'
@@ -327,14 +350,26 @@ function MarkRented({ agentId, onUpdate }) {
         <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 24 }}>
            <div className="form-group">
             <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.05em', marginBottom: 10, display: 'block' }}>TARGET ESTATE</label>
-            <select className="form-control" style={{ height: 64 }} value={form.property} onChange={e => set('property', e.target.value)} required>
+            <select className="form-control" style={{ height: 64 }} value={form.property} onChange={e => {
+                const pid = e.target.value;
+                const p = properties.find(x => x.property_id == pid);
+                setForm(f => {
+                   let rent = f.monthly_rent;
+                   if (p) rent = p.listed_price > 100000 ? Math.round(p.listed_price * 0.01) : p.listed_price;
+                   return { ...f, property: pid, monthly_rent: rent };
+                });
+                api.get('/notifications/').then(r => setNotifs(r.data.results || r.data));
+            }} required>
               <option value="">Select estate for charter...</option>
               {properties.map(p => <option key={p.property_id} value={p.property_id}>{p.address}</option>)}
             </select>
           </div>
           <div className="form-group">
             <label style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--accent)', letterSpacing: '0.2em', marginBottom: 12, display: 'block' }}>TENANT IDENTITY</label>
-            <select className="form-control" style={{ height: 64 }} value={form.tenant} onChange={e => set('tenant', e.target.value)} required>
+            <select className="form-control" style={{ height: 64 }} value={form.tenant} onChange={e => {
+                set('tenant', e.target.value);
+                api.get('/notifications/').then(r => setNotifs(r.data.results || r.data));
+            }} required>
               <option value="">Authorize tenant selection...</option>
               {tenants.map(t => <option key={t.tenant_id} value={t.tenant_id}>{t.name} — {t.email}</option>)}
             </select>
@@ -386,7 +421,7 @@ export default function AgentDashboard() {
 
   return (
     <Routes>
-      <Route index element={<AgentOverview data={data} />} />
+      <Route index element={<AgentOverview data={data} user={user} />} />
       <Route path="inquiries" element={<RequestsCenter onUpdate={loadData} />} />
       <Route path="sell" element={<MarkSold agentId={user.agent_id} onUpdate={loadData} />} />
       <Route path="rent" element={<MarkRented agentId={user.agent_id} onUpdate={loadData} />} />

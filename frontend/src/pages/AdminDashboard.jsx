@@ -67,9 +67,9 @@ function SQLConsole() {
               </button>
             </div>
           </div>
-          <div style={{ padding: 24, background: 'rgba(0, 0, 0, 0.2)' }}>
+          <div style={{ padding: 24, background: '#111827', borderRadius: '0 0 16px 16px' }}>
             <textarea
-              style={{ background: 'transparent', color: 'var(--text-main)', border: 'none', fontFamily: 'monospace', fontSize: '0.95rem', width: '100%', height: 200, resize: 'none', outline: 'none', lineHeight: 1.6 }}
+              style={{ background: 'transparent', color: '#ffffff', border: 'none', fontFamily: 'monospace', fontSize: '0.95rem', width: '100%', height: 200, resize: 'none', outline: 'none', lineHeight: 1.6 }}
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Enter SQL command sequence..."
@@ -403,6 +403,129 @@ function UserManagement() {
   )
 }
 
+// ─── Property Management ─────────────────────────────────────────────────────────
+function PropertyManagement() {
+  const [properties, setProperties] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState({
+    address: '', city: 'Guwahati', locality: '', type: 'House', size: 1000,
+    no_of_bedroom: 2, listed_price: 5000000, listed_date: new Date().toISOString().split('T')[0],
+    construction_year: 2020, current_status: 'available', owner_id: 1, agent_id: 1
+  })
+  const [msg, setMsg] = useState(null)
+
+  const fetchProps = () => { api.get('/properties/').then(r => { setProperties(r.data.results || r.data); setLoading(false) }) }
+  useEffect(() => { fetchProps() }, [])
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this property?")) return
+    try {
+      await api.delete(`/admin/properties/${id}/`)
+      fetchProps()
+      setMsg({ type: 'success', text: 'Property removed successfully.' })
+    } catch (e) {
+      setMsg({ type: 'error', text: 'Deletion failed.' })
+    }
+  }
+
+  return (
+    <div style={{ animation: 'fadeIn 0.8s' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+        <h2 style={{ color: 'var(--text-main)', fontSize: '1.5rem', fontWeight: 800 }}>Property Management</h2>
+        <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>{showForm ? 'CANCEL' : 'ADD PROPERTY'}</button>
+      </div>
+
+      {msg && (
+        <div style={{ padding: '16px 24px', borderRadius: 12, background: msg.type === 'success' ? 'rgba(74, 222, 128, 0.1)' : 'rgba(239, 68, 68, 0.1)', color: msg.type === 'success' ? '#166534' : '#991b1b', border: `1px solid ${msg.type === 'success' ? '#4ade80' : '#f87171'}`, marginBottom: 32, fontSize: '0.85rem', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{msg.text}</span>
+          <button onClick={() => setMsg(null)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1.1rem' }}>✕</button>
+        </div>
+      )}
+
+      {showForm && (
+        <div className="card" style={{ marginBottom: 32, padding: 32 }}>
+          <form style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }} onSubmit={async e => {
+            e.preventDefault()
+            try { await api.post('/admin/properties/', form); fetchProps(); setShowForm(false); setMsg({ type: 'success', text: 'Property added successfully.' }) }
+            catch (e) { setMsg({ type: 'error', text: 'Addition failed. Check constraints.' }) }
+          }}>
+            <div className="form-group">
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 8, display: 'block' }}>Property Address</label>
+              <input className="form-control" placeholder="e.g. 123 Main St" required value={form.address} onChange={e => setForm({...form, address: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 8, display: 'block' }}>City</label>
+              <input className="form-control" placeholder="e.g. New York" required value={form.city} onChange={e => setForm({...form, city: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 8, display: 'block' }}>Locality / Area</label>
+              <input className="form-control" placeholder="e.g. Downtown" required value={form.locality} onChange={e => setForm({...form, locality: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 8, display: 'block' }}>Property Type</label>
+              <select className="form-control" value={form.type} onChange={e => setForm({...form, type: e.target.value})}>
+                <option value="House">House</option><option value="Apartment">Apartment</option><option value="Villa">Villa</option><option value="Studio">Studio</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 8, display: 'block' }}>Size (Sq. Ft.)</label>
+              <input className="form-control" type="number" placeholder="e.g. 1500" required value={form.size} onChange={e => setForm({...form, size: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 8, display: 'block' }}>Bedrooms (BHK)</label>
+              <input className="form-control" type="number" placeholder="e.g. 3" required value={form.no_of_bedroom} onChange={e => setForm({...form, no_of_bedroom: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 8, display: 'block' }}>Listed Price (₹)</label>
+              <input className="form-control" type="number" placeholder="e.g. 5000000" required value={form.listed_price} onChange={e => setForm({...form, listed_price: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 8, display: 'block' }}>Construction Year</label>
+              <input className="form-control" type="number" placeholder="e.g. 2022" required value={form.construction_year} onChange={e => setForm({...form, construction_year: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 8, display: 'block' }}>Owner ID</label>
+              <input className="form-control" type="number" placeholder="e.g. 101" required value={form.owner_id} onChange={e => setForm({...form, owner_id: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 8, display: 'block' }}>Agent ID</label>
+              <input className="form-control" type="number" placeholder="e.g. 202" required value={form.agent_id} onChange={e => setForm({...form, agent_id: e.target.value})} />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <button className="btn btn-primary" style={{ height: 56, fontSize: '1rem', width: '100%' }}>Create Property</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div className="card" style={{ padding: 0 }}>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr><th>ID</th><th>ADDRESS</th><th>CITY</th><th>PRICE</th><th>AGENT</th><th style={{ textAlign: 'right' }}>ACTIONS</th></tr>
+            </thead>
+            <tbody>
+               {properties.map(p => (
+                <tr key={p.property_id}>
+                  <td style={{ color: 'var(--text-muted)' }}>{p.property_id}</td>
+                  <td style={{ color: 'var(--text-main)', fontWeight: 700 }}>{p.address}</td>
+                  <td>{p.city}</td>
+                  <td style={{ fontWeight: 800 }}>{fmtCur(p.listed_price)}</td>
+                  <td>{p.agent?.name || p.agent_id || '-'}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    <button className="btn" onClick={() => handleDelete(p.property_id)} style={{ padding: '8px 12px', fontSize: '0.65rem', background: 'rgba(239, 68, 68, 0.1)', color: '#991b1b', border: '1px solid #f87171' }}>REMOVE</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminDashboard() {
   const location = useLocation()
   const path = location.pathname
@@ -413,6 +536,7 @@ export default function AdminDashboard() {
   if (path.includes('/sql')) { activeComponent = <SQLConsole />; pageTitle = 'Engine Control' }
   else if (path.includes('/users')) { activeComponent = <UserManagement />; pageTitle = 'Access Governance' }
   else if (path.includes('/tables')) { activeComponent = <TableBrowser />; pageTitle = 'Estate Registries' }
+  else if (path.includes('/properties')) { activeComponent = <PropertyManagement />; pageTitle = 'Property Portfolio' }
 
   return (
     <div style={{ animation: 'fadeIn 0.8s' }}>

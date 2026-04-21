@@ -213,12 +213,105 @@ function RentalReport() {
   )
 }
 
+function AgentDirectory() {
+  const [agents, setAgents] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [form, setForm] = useState({ name: '', contact: '', email: '' })
+  const [msg, setMsg] = useState(null)
+  
+  const fetchAgents = () => {
+    api.get('/agents/').then(r => { setAgents(r.data.results || r.data); setLoading(false) })
+  }
+
+  useEffect(() => { fetchAgents() }, [])
+
+  const handleSubmit = async e => {
+    e.preventDefault()
+    setMsg(null)
+    try {
+      await api.post('/agents/', form)
+      setMsg({ type: 'success', text: `Agent ${form.name} successfully registered.` })
+      setForm({ name: '', contact: '', email: '' })
+      fetchAgents()
+    } catch (e) {
+      setMsg({ type: 'error', text: e.response?.data?.error || 'Registration failed.' })
+    }
+  }
+
+  return (
+    <div style={{ animation: 'fadeIn 0.8s ease-out' }}>
+      <div style={{ marginBottom: 40 }}>
+        <h1 style={{ fontFamily: 'Inter, sans-serif', fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 800, color: 'var(--text-main)', marginBottom: 8, letterSpacing: '-0.04em' }}>Agent Directory</h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', fontWeight: 500 }}>Recruit new professional advisors to the firm's roster.</p>
+      </div>
+
+      <div className="card" style={{ marginBottom: 40, padding: 40 }}>
+        <h3 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: 24 }}>New Recruitment</h3>
+        {msg && <div style={{ marginBottom: 24, padding: '16px', borderRadius: 12, background: msg.type === 'success' ? '#f0fdf4' : '#fef2f2', color: msg.type === 'success' ? '#166534' : '#991b1b', border: `1px solid ${msg.type === 'success' ? '#bbf7d0' : '#fee2e2'}`, fontSize: '0.9rem', fontWeight: 500 }}>{msg.text}</div>}
+        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 20, alignItems: 'end' }}>
+           <div className="form-group">
+              <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.05em', marginBottom: 10, display: 'block' }}>FULL LEGAL NAME</label>
+              <input className="form-control" style={{ height: 48 }} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
+           </div>
+           <div className="form-group">
+              <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.05em', marginBottom: 10, display: 'block' }}>CONTACT DIGITS</label>
+              <input className="form-control" style={{ height: 48 }} value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} required />
+           </div>
+           <div className="form-group">
+              <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.05em', marginBottom: 10, display: 'block' }}>SECURE EMAIL</label>
+              <input className="form-control" type="email" style={{ height: 48 }} value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
+           </div>
+           <button className="btn btn-primary" type="submit" style={{ height: 48, padding: '0 32px' }}>AUTHORIZE</button>
+        </form>
+      </div>
+
+      <div className="card" style={{ padding: 0 }}>
+        <div style={{ padding: '32px 40px', borderBottom: '1px solid #eee' }}>
+           <h3 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>Active Advisors</h3>
+        </div>
+        <div className="table-wrap">
+           {loading ? <div style={{ padding: 40, textAlign: 'center' }}><div className="spinner" style={{ borderTopColor: 'var(--primary)' }} /></div> : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>ADVISOR</th>
+                    <th>CONTACT INFO</th>
+                    <th>TRANSACTIONS</th>
+                    <th>RATING</th>
+                  </tr>
+                </thead>
+                <tbody>
+                   {agents.map(a => (
+                     <tr key={a.agent_id}>
+                       <td style={{ color: 'var(--text-main)', fontWeight: 700 }}>{a.name}</td>
+                       <td>
+                          <div style={{ color: 'var(--text-main)' }}>{a.email}</div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{a.contact}</div>
+                       </td>
+                       <td style={{ color: 'var(--primary)', fontWeight: 800 }}>{a.completed_deals} DEALS</td>
+                       <td>
+                          <span style={{ fontWeight: 800, fontSize: '0.75rem', padding: '3px 10px', borderRadius: 99, background: a.rating >= 4 ? '#f0fdf4' : a.rating >= 3 ? '#fffbeb' : '#fef2f2', color: a.rating >= 4 ? '#166534' : a.rating >= 3 ? '#92400e' : '#991b1b', border: `1px solid ${a.rating >= 4 ? '#bbf7d0' : a.rating >= 3 ? '#fde68a' : '#fecaca'}` }}>
+                            ★ {Number(a.rating).toFixed(1)}
+                          </span>
+                       </td>
+                     </tr>
+                   ))}
+                </tbody>
+              </table>
+           )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function OfficeDashboard() {
   return (
     <Routes>
       <Route index element={<OfficeOverview />} />
       <Route path="sales" element={<SalesReport />} />
       <Route path="rentals" element={<RentalReport />} />
+      <Route path="agents" element={<AgentDirectory />} />
       <Route path="*" element={<Navigate to="" replace />} />
     </Routes>
   )

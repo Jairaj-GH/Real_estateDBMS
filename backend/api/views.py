@@ -93,10 +93,27 @@ class PropertyMetaView(APIView):
 
 # ─── Agents ─────────────────────────────────────────────────────────────────
 
-class AgentListView(generics.ListAPIView):
+class AgentListView(generics.ListCreateAPIView):
     queryset = Agent.objects.all().order_by('name')
     serializer_class = AgentSerializer
     permission_classes = [IsAuthenticated, IsOfficeOrAdmin]
+
+    def create(self, request, *args, **kwargs):
+        from django.db.models import Max
+        try:
+            max_id = Agent.objects.aggregate(m=Max('agent_id'))['m'] or 0
+            data = request.data.copy()
+            data['agent_id'] = max_id + 1
+            if 'rating' not in data or not data['rating']:
+                data['rating'] = 4.0
+            
+            serializer = self.get_serializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # ─── Buyers ─────────────────────────────────────────────────────────────────
@@ -427,6 +444,41 @@ class AdminUserDetailView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'User not found.'}, status=404)
 
+class AdminPropertyView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
+    def post(self, request):
+        try:
+            max_id = Property.objects.aggregate(m=Max('property_id'))['m'] or 0
+            data = request.data
+            prop = Property.objects.create(
+                property_id=max_id + 1,
+                address=data.get('address'),
+                city=data.get('city'),
+                locality=data.get('locality'),
+                type=data.get('type'),
+                size=data.get('size'),
+                no_of_bedroom=data.get('no_of_bedroom'),
+                listed_price=data.get('listed_price'),
+                listed_date=data.get('listed_date'),
+                construction_year=data.get('construction_year'),
+                current_status=data.get('current_status', 'available'),
+                owner_id=data.get('owner_id'),
+                agent_id=data.get('agent_id')
+            )
+            return Response({'message': 'Property added successfully', 'property_id': prop.property_id})
+        except Exception as e:
+            return Response({'error': str(e)}, status=400)
+
+    def delete(self, request, property_id=None):
+        try:
+            prop = Property.objects.get(property_id=property_id)
+            prop.delete()
+            return Response({'message': 'Property removed successfully'})
+        except Property.DoesNotExist:
+            return Response({'error': 'Property not found'}, status=404)
+        except Exception as e:
+            return Response({'error': str(e)}, status=400)
 
 # ─── Agent's own transactions ────────────────────────────────────────────────
 
@@ -478,25 +530,32 @@ class AnalyticsView(APIView):
 
     def get(self, request):
         from datetime import date
-        from django.db.models import Avg, Max, Min
+        from django.db.models import Avg, Max, Min, Sum, Count
         from django.db.models.functions import ExtractYear, ExtractMonth
+        role = getattr(request.user, 'profile', None) and request.user.profile.role or 'customer'
+        is_agent = (role == 'agent')
+        agent_id = request.user.profile.agent_id if is_agent else None
+
+        sales_qs = Sale.objects.filter(agent__agent_id=agent_id) if is_agent else Sale.objects.all()
+        rents_qs = Rent.objects.filter(agent__agent_id=agent_id) if is_agent else Rent.objects.all()
+        prop_qs = Property.objects.filter(agent__agent_id=agent_id) if is_agent else Property.objects.all()
+        agents_qs = Agent.objects.all()
 
         # --- KPI Summary ---
-        total_sales_revenue = Sale.objects.aggregate(t=Sum('final_price'))['t'] or 0
-        total_sales_count = Sale.objects.count()
-        avg_deal_size = Sale.objects.aggregate(a=Avg('final_price'))['a'] or 0
-        active_rents = Rent.objects.filter(
+        total_sales_revenue = sales_qs.aggregate(t=Sum('final_price'))['t'] or 0
+        total_sales_count = sales_qs.count()
+        avg_deal_size = sales_qs.aggregate(a=Avg('final_price'))['a'] or 0
+        active_rents = rents_qs.filter(
             start_date__lte=date.today(),
             end_date__gte=date.today()
         ).count()
-        total_properties = Property.objects.count()
-        available_properties = Property.objects.filter(current_status='available').count()
-        avg_days_on_market = Sale.objects.aggregate(a=Avg('days_on_market'))['a'] or 0
+        total_properties = prop_qs.count()
+        available_properties = prop_qs.filter(current_status='available').count()
+        avg_days_on_market = sales_qs.aggregate(a=Avg('days_on_market'))['a'] or 0
 
         # --- Agent Performance (Top 10 by revenue) ---
         agent_perf = []
-        agents = Agent.objects.all().order_by('name')
-        for agent in agents:
+        for agent in agents_qs.order_by('name'):
             sales = Sale.objects.filter(agent=agent)
             rents = Rent.objects.filter(agent=agent)
             rev = sales.aggregate(t=Sum('final_price'))['t'] or 0
@@ -513,7 +572,7 @@ class AnalyticsView(APIView):
 
         # --- Year-wise Sales Trend ---
         yearly_sales = (
-            Sale.objects.annotate(year=ExtractYear('sale_date'))
+            sales_qs.annotate(year=ExtractYear('sale_date'))
             .values('year')
             .annotate(count=Count('property'), revenue=Sum('final_price'))
             .order_by('year')
@@ -525,7 +584,7 @@ class AnalyticsView(APIView):
 
         # --- Monthly Revenue (last 12 months / all available data) ---
         monthly_sales = (
-            Sale.objects.annotate(
+            sales_qs.annotate(
                 year=ExtractYear('sale_date'),
                 month=ExtractMonth('sale_date')
             )
@@ -545,7 +604,7 @@ class AnalyticsView(APIView):
 
         # --- Property Type Distribution ---
         type_dist = (
-            Property.objects.values('type')
+            prop_qs.values('type')
             .annotate(count=Count('property_id'))
             .order_by('-count')
         )
@@ -556,7 +615,7 @@ class AnalyticsView(APIView):
 
         # --- City-wise Breakdown ---
         city_dist = (
-            Property.objects.values('city')
+            prop_qs.values('city')
             .annotate(
                 count=Count('property_id'),
                 avg_price=Avg('listed_price')
@@ -570,7 +629,7 @@ class AnalyticsView(APIView):
 
         # --- Property Status Distribution ---
         status_dist = (
-            Property.objects.values('current_status')
+            prop_qs.values('current_status')
             .annotate(count=Count('property_id'))
             .order_by('-count')
         )
@@ -580,7 +639,7 @@ class AnalyticsView(APIView):
         ]
 
         # --- Recent Transactions (last 10 sales) ---
-        recent_sales = Sale.objects.select_related('property', 'buyer', 'agent').order_by('-sale_date')[:10]
+        recent_sales = sales_qs.select_related('property', 'buyer', 'agent').order_by('-sale_date')[:10]
         recent = [
             {
                 'address': s.property.address if s.property else 'N/A',
@@ -604,7 +663,7 @@ class AnalyticsView(APIView):
         ]
         price_dist = []
         for pr in price_ranges:
-            cnt = Property.objects.filter(listed_price__gte=pr['min'], listed_price__lt=pr['max']).count()
+            cnt = prop_qs.filter(listed_price__gte=pr['min'], listed_price__lt=pr['max']).count()
             price_dist.append({'label': pr['label'], 'count': cnt})
 
         return Response({
@@ -723,14 +782,22 @@ class PropertyInquiryView(APIView):
             type=inquiry_type,
             message=request.data.get('message', f"Inquiry for {prop.address}")
         )
-        return Response({'message': 'Interest successfully registered.'})
+        
+        agent_info = {}
+        if prop.agent:
+            agent_info = {
+                'agent_name': prop.agent.name,
+                'agent_phone': prop.agent.contact,
+            }
+
+        return Response({'message': 'Interest successfully registered. The Agent will contact you soon.', **agent_info})
 
 
 class NotificationListView(APIView):
     permission_classes = [IsAuthenticated, IsAnyAuthenticatedRole]
 
     def get(self, request):
-        role = get_user_role(request.user)
+        role = getattr(request.user, 'profile', None) and request.user.profile.role or 'customer'
         if role == 'agent':
             try:
                 agent_id = request.user.profile.agent_id
@@ -747,7 +814,7 @@ class NotificationListView(APIView):
         return Response(NotificationSerializer(qs, many=True).data)
 
 
-class ConfirmTransactionView(APIView):
+class ConfirmNotificationView(APIView):
     permission_classes = [IsAuthenticated, IsAgentOrAdmin]
 
     def post(self, request, notification_id):
@@ -780,6 +847,21 @@ class ConfirmTransactionView(APIView):
                     final_price=prop.listed_price,
                     days_on_market=30
                 )
+                
+                # Convert buyer to owner and update property owner
+                from django.db.models import Max
+                owner = Owner.objects.filter(email=buyer.email).first()
+                if not owner:
+                    max_owner_id = Owner.objects.aggregate(m=Max('owner_id'))['m'] or 0
+                    owner = Owner.objects.create(
+                        owner_id=max_owner_id + 1,
+                        name=buyer.name,
+                        phone=buyer.phone,
+                        email=buyer.email
+                    )
+                prop.owner = owner
+                prop.current_status = 'sold'
+                prop.save()
             elif notif.type == 'rent_request':
                 sender = User.objects.get(id=notif.sender_id)
                 tenant_m = Tenant.objects.aggregate(m=Max('tenant_id'))['m'] or 0
@@ -795,6 +877,8 @@ class ConfirmTransactionView(APIView):
                     end_date=date.today().replace(year=date.today().year + 1),
                     monthly_rent=prop.listed_price / 100
                 )
+                prop.current_status = 'rented'
+                prop.save()
 
             # Update Agent Achievement
             agent.completed_deals += 1
@@ -852,6 +936,20 @@ class ConfirmTransactionView(APIView):
                         final_price=prop.listed_price,
                         days_on_market=max(1, days)
                     )
+                    
+                    # Convert buyer to owner and update property owner
+                    from django.db.models import Max
+                    owner = Owner.objects.filter(email=buyer.email).first()
+                    if not owner:
+                        max_owner_id = Owner.objects.aggregate(m=Max('owner_id'))['m'] or 0
+                        owner = Owner.objects.create(
+                            owner_id=max_owner_id + 1,
+                            name=buyer.name,
+                            phone=buyer.phone,
+                            email=buyer.email
+                        )
+                    prop.owner = owner
+                    
                     msg = f"Purchase confirmed for {prop.address}."
                 elif tenant:
                     # Logic for Rent
@@ -883,7 +981,18 @@ class ConfirmTransactionView(APIView):
                     message=f"TRANSACTION COMPLETE: {user.get_full_name() or user.username} has finalized the deal."
                 )
 
-            return Response({'message': msg})
+                agent_info = {
+                    'agent_name': agent.name,
+                    'agent_phone': agent.contact,
+                }
+                rental_info = {}
+                if tenant:
+                    rental_info = {
+                        'start_date': date.today().isoformat(),
+                        'end_date': date.today().replace(year=date.today().year + 1).isoformat()
+                    }
+
+            return Response({'message': msg, **agent_info, **rental_info})
 
         except Property.DoesNotExist:
             return Response({'error': 'Property not found.'}, status=404)

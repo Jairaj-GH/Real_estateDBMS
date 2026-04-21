@@ -45,9 +45,11 @@ urlpatterns = [
     path('admin/tables/<str:table_name>/', views.AdminTableView.as_view(), name='admin-table'),
     path('admin/users/', views.AdminUserListCreateView.as_view(), name='admin-user-list'),
     path('admin/users/<int:user_id>/', views.AdminUserDetailView.as_view(), name='admin-user-detail'),
+    path('admin/properties/', views.AdminPropertyView.as_view(), name='admin-property'),
+    path('admin/properties/<int:property_id>/', views.AdminPropertyView.as_view(), name='admin-property-detail'),
 
     # Notifications & Workflows
     path('register/', views.RegisterView.as_view(), name='register'),
     path('notifications/', views.NotificationListView.as_view(), name='notification-list'),
-    path('notifications/<int:notification_id>/confirm/', views.ConfirmTransactionView.as_view(), name='notification-confirm'),
+    path('notifications/<int:notification_id>/confirm/', views.ConfirmNotificationView.as_view(), name='notification-confirm'),
 ]

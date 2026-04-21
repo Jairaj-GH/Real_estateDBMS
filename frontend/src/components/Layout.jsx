@@ -11,6 +11,7 @@ const NAV_CONFIG = {
     { label: 'Office Home', icon: '🏢', to: '/office' },
     { label: 'Sales Portfolio', icon: '💰', to: '/office/sales' },
     { label: 'Rental Assets', icon: '🏠', to: '/office/rentals' },
+    { label: 'Agent Directory', icon: '👔', to: '/office/agents' },
   ],
   agent: [
     { label: 'My Briefing', icon: '📋', to: '/agent' },
@@ -19,13 +20,13 @@ const NAV_CONFIG = {
     { label: 'Achievements', icon: '🏆', to: '/agent/transactions' },
   ],
   customer: [
-    { label: 'Property Feed', icon: '🔍', to: '/marketplace' },
   ],
   admin: [
     { label: 'Admin Hub', icon: '🛡️', to: '/admin' },
     { label: 'SQL Console', icon: '💻', to: '/admin/sql' },
     { label: 'Users', icon: '👥', to: '/admin/users' },
     { label: 'Tables', icon: '🗃️', to: '/admin/tables' },
+    { label: 'Properties', icon: '🏠', to: '/admin/properties' },
   ],
 }
 

@@ -19,6 +19,7 @@ function PropertyDetailModal({ property, onClose, onRefresh }) {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [txData, setTxData] = useState(null)
 
   useEffect(() => {
     api.get(`/properties/${property.property_id}/`).then(r => setDetail(r.data))
@@ -30,12 +31,17 @@ function PropertyDetailModal({ property, onClose, onRefresh }) {
     </div>
   )
 
+  const handleClose = () => {
+    onClose()
+    if (txData && onRefresh) onRefresh()
+  }
+
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)' }}>
+    <div className="modal-overlay" onClick={handleClose} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)' }}>
       <div className="modal card" onClick={e => e.stopPropagation()} style={{ maxWidth: 1000, borderRadius: 32 }}>
         <div className="modal-header" style={{ padding: '24px 40px', borderBottom: '1px solid rgba(0,0,0,0.05)', background: 'transparent' }}>
           <h2 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.5rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>Property Details</h2>
-          <button className="btn" onClick={onClose} style={{ padding: 8, minWidth: 40, height: 40, borderRadius: '50%' }}>✕</button>
+          <button className="btn" onClick={handleClose} style={{ padding: 8, minWidth: 40, height: 40, borderRadius: '50%' }}>✕</button>
         </div>
         <div className="modal-body" style={{ padding: '40px' }}>
           <div className="detail-grid">
@@ -52,8 +58,13 @@ function PropertyDetailModal({ property, onClose, onRefresh }) {
               
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 32 }}>
                 <div style={{ padding: 20,  borderRadius: 16, border: '1px solid rgba(0,0,0,0.02)' }}>
-                  <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: 4 }}>VALUATION</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>{fmt(detail.listed_price)}</div>
+                  <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: 4 }}>
+                    {(user?.customer_type === 'tenant' || detail.listed_price <= 100000) ? 'MONTHLY RENT' : 'VALUATION'}
+                  </div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                    {fmt((user?.customer_type === 'tenant' && detail.listed_price > 100000) ? Math.round(detail.listed_price * 0.01) : detail.listed_price)} 
+                    {(user?.customer_type === 'tenant' || detail.listed_price <= 100000) && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}> / mo</span>}
+                  </div>
                 </div>
                 <div style={{ padding: 20,  borderRadius: 16, border: '1px solid rgba(0,0,0,0.02)' }}>
                   <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: 4 }}>DIMENSIONS</div>
@@ -67,14 +78,41 @@ function PropertyDetailModal({ property, onClose, onRefresh }) {
 
               {user?.role === 'customer' && detail.current_status === 'available' && (
                 <div style={{ borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: 32 }}>
+                  
+                  {(user?.customer_type === 'tenant' || (user?.customer_type !== 'buyer' && detail.listed_price <= 100000)) && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+                       <div className="form-group">
+                         <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.05em', marginBottom: 8, display: 'block' }}>START DATE</label>
+                         <input type="date" className="form-control" id="rent_start_date" defaultValue={new Date().toISOString().split('T')[0]} style={{ width: '100%', height: 48, borderRadius: 12 }} />
+                       </div>
+                       <div className="form-group">
+                         <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.05em', marginBottom: 8, display: 'block' }}>END DATE</label>
+                         <input type="date" className="form-control" id="rent_end_date" defaultValue={new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]} style={{ width: '100%', height: 48, borderRadius: 12 }} />
+                       </div>
+                    </div>
+                  )}
+
                   <button 
                     className="btn btn-primary" 
                     onClick={async () => {
                       setLoading(true); setError(''); setMessage('');
                       try {
-                        const r = await api.post(`/properties/${property.property_id}/transaction/`);
+                        let type = 'buy_request';
+                        let extraMsg = '';
+                        if (user?.customer_type === 'tenant' || (user?.customer_type !== 'buyer' && detail.listed_price <= 100000)) {
+                           type = 'rent_request';
+                           const sd = document.getElementById('rent_start_date')?.value;
+                           const ed = document.getElementById('rent_end_date')?.value;
+                           if (sd && ed) extraMsg = ` \nRequested Period: ${sd} to ${ed}`;
+                        } else if (user?.customer_type === 'buyer') {
+                           type = 'buy_request';
+                        } else {
+                           type = detail.listed_price > 100000 ? 'buy_request' : 'rent_request';
+                        }
+
+                        const r = await api.post(`/properties/${property.property_id}/inquire/`, { type, message: `Inquiry for ${detail.address}.${extraMsg}` });
                         setMessage(r.data.message);
-                        setTimeout(() => { onClose(); if(onRefresh) onRefresh(); }, 2000);
+                        setTxData(r.data);
                       } catch (err) {
                         setError(err.response?.data?.error || 'Transaction failed');
                       } finally {
@@ -84,9 +122,25 @@ function PropertyDetailModal({ property, onClose, onRefresh }) {
                     style={{ width: '100%', height: 56, borderRadius: 16, fontSize: '1rem', fontWeight: 700 }}
                     disabled={loading}
                   >
-                    {loading ? 'PROCESSING...' : (detail.listed_price > 100000 ? 'FINALIZE PURCHASE' : 'FINALIZE RENTAL')}
+                    {loading ? 'PROCESSING...' : (user?.customer_type === 'tenant' ? 'RENT' : user?.customer_type === 'buyer' ? 'BUY' : (detail.listed_price > 100000 ? 'BUY' : 'RENT'))}
                   </button>
-                  {message && <p style={{ color: '#059669', fontSize: '0.85rem', fontWeight: 600, marginTop: 12, textAlign: 'center' }}>✓ {message}</p>}
+                  {message && (
+                    <div style={{ marginTop: 16 }}>
+                      <p style={{ color: '#059669', fontSize: '0.85rem', fontWeight: 600, textAlign: 'center' }}>✓ {message}</p>
+                      {txData?.agent_name && (
+                        <div style={{ padding: '16px', background: 'rgba(5, 150, 105, 0.05)', border: '1px solid rgba(5, 150, 105, 0.2)', borderRadius: '12px', marginTop: '16px' }}>
+                          <p style={{ margin: '0 0 4px 0', fontSize: '0.75rem', color: '#065f46', fontWeight: 800, letterSpacing: '0.05em' }}>ASSOCIATED AGENT</p>
+                          <p style={{ margin: 0, fontSize: '0.9rem', color: '#065f46', fontWeight: 600 }}>{txData.agent_name} <span style={{ opacity: 0.7 }}>•</span> {txData.agent_phone}</p>
+                          {txData.start_date && (
+                             <>
+                               <p style={{ margin: '12px 0 4px 0', fontSize: '0.75rem', color: '#065f46', fontWeight: 800, letterSpacing: '0.05em' }}>RENTAL PERIOD</p>
+                               <p style={{ margin: 0, fontSize: '0.9rem', color: '#065f46', fontWeight: 600 }}>{txData.start_date} <span style={{ opacity: 0.7 }}>to</span> {txData.end_date}</p>
+                             </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {error && <p style={{ color: '#dc2626', fontSize: '0.85rem', fontWeight: 600, marginTop: 12, textAlign: 'center' }}>✕ {error}</p>}
                 </div>
               )}
@@ -158,7 +212,7 @@ export default function Marketplace() {
   const defaultStatus = (user?.role === 'admin' || user?.role === 'office') ? '' : 'available'
   
   const [filters, setFilters] = useState({
-    city: 'Guwahati', locality: '', type: '', status: defaultStatus,
+    city: '', locality: '', type: '', status: defaultStatus,
     min_price: '', max_price: '', no_of_bedroom: '', search: ''
   })
   const [searchTerm, setSearchTerm] = useState(filters.search)
