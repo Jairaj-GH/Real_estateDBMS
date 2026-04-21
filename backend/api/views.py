@@ -34,11 +34,11 @@ class PropertyListView(generics.ListAPIView):
 
         city = params.get('city')
         locality = params.get('locality')
-        property_type = params.get('property_type')
+        property_type = params.get('type')
         status_filter = params.get('status')
         min_price = params.get('min_price')
         max_price = params.get('max_price')
-        bedrooms = params.get('bedrooms')
+        bedrooms = params.get('no_of_bedroom')
         search = params.get('search')
 
         if city:
@@ -46,7 +46,7 @@ class PropertyListView(generics.ListAPIView):
         if locality:
             qs = qs.filter(locality__icontains=locality)
         if property_type:
-            qs = qs.filter(property_type=property_type)
+            qs = qs.filter(type=property_type)
         if status_filter:
             qs = qs.filter(current_status=status_filter)
         if min_price:

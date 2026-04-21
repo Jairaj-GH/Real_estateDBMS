@@ -314,12 +314,42 @@ function UserManagement() {
   const fetchUsers = () => { api.get('/admin/users/').then(r => { setUsers(r.data); setLoading(false) }) }
   useEffect(() => { fetchUsers() }, [])
 
+  const handleDeleteUser = async (id, email) => {
+    if (!window.confirm(`Are you sure you want to permanently revoke system access for ${email}?`)) return
+    try {
+      await api.delete(`/admin/users/${id}/`)
+      fetchUsers()
+      setMsg({ type: 'success', text: 'Identity removed from core directory.' })
+    } catch (e) {
+      setMsg({ type: 'error', text: 'Registry update failed.' })
+    }
+  }
+
   return (
     <div style={{ animation: 'fadeIn 0.8s' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
         <h2 style={{ color: 'var(--text-main)', fontSize: '1.5rem', fontWeight: 800 }}>Personnel Directory</h2>
         <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>{showForm ? 'CANCEL' : 'AUTHORIZE USER'}</button>
       </div>
+
+      {msg && (
+        <div style={{ 
+          padding: '16px 24px', 
+          borderRadius: 12, 
+          background: msg.type === 'success' ? 'rgba(74, 222, 128, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+          color: msg.type === 'success' ? '#166534' : '#991b1b',
+          border: `1px solid ${msg.type === 'success' ? '#4ade80' : '#f87171'}`,
+          marginBottom: 32,
+          fontSize: '0.85rem',
+          fontWeight: 600,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <span>{msg.text}</span>
+          <button onClick={() => setMsg(null)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1.1rem' }}>✕</button>
+        </div>
+      )}
 
       {showForm && (
         <div className="card" style={{ marginBottom: 32, padding: 32 }}>
@@ -345,7 +375,7 @@ function UserManagement() {
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>IDENTITY</th><th>COMMUNICATION</th><th>CLEARANCE</th><th>STATUS</th></tr>
+              <tr><th>IDENTITY</th><th>COMMUNICATION</th><th>CLEARANCE</th><th>STATUS</th><th style={{ textAlign: 'right' }}>ACTIONS</th></tr>
             </thead>
             <tbody>
                {users.map(u => (
@@ -354,6 +384,15 @@ function UserManagement() {
                   <td style={{ color: 'var(--text-muted)' }}>{u.email}</td>
                   <td><span style={{ fontSize: '0.65rem', padding: '4px 12px',  borderRadius: 99, fontWeight: 800, color: 'var(--text-main)' }}>{u.role.toUpperCase()}</span></td>
                   <td><span style={{ color: u.is_active ? '#166534' : '#991b1b', fontWeight: 800, fontSize: '0.75rem' }}>{u.is_active ? 'ACTIVE' : 'SUSPENDED'}</span></td>
+                  <td style={{ textAlign: 'right' }}>
+                    <button 
+                      className="btn" 
+                      onClick={() => handleDeleteUser(u.id, u.email)}
+                      style={{ padding: '8px 12px', fontSize: '0.65rem', background: 'rgba(239, 68, 68, 0.1)', color: '#991b1b', border: '1px solid #f87171' }}
+                    >
+                      REVOKE
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

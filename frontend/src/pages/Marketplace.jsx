@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import api from '../api/axios'
+import { useAuth } from '../context/AuthContext'
 import p1 from '../assets/p1.png'
 import p2 from '../assets/p2.png'
 import p3 from '../assets/p3.png'
@@ -118,12 +119,16 @@ const PropertyCard = React.memo(({ property, onClick }) => {
 })
 
 export default function Marketplace() {
+  const { user } = useAuth()
   const [properties, setProperties] = useState([])
   const [loading, setLoading] = useState(false)
   const [selected, setSelected] = useState(null)
   const [meta, setMeta] = useState({ cities: [], localities: [], types: [] })
+  
+  const defaultStatus = (user?.role === 'admin' || user?.role === 'office') ? '' : 'available'
+  
   const [filters, setFilters] = useState({
-    city: 'Guwahati', locality: '', type: '', status: 'available',
+    city: 'Guwahati', locality: '', type: '', status: defaultStatus,
     min_price: '', max_price: '', no_of_bedroom: '', search: ''
   })
   const [searchTerm, setSearchTerm] = useState(filters.search)
@@ -139,7 +144,7 @@ export default function Marketplace() {
   const setF = (k, v) => { setFilters(f => ({ ...f, [k]: v })); setPage(1) }
   const clearFilters = () => { 
     setSearchTerm('')
-    setFilters({ city: '', locality: '', type: '', status: 'available', min_price: '', max_price: '', no_of_bedroom: '', search: '' })
+    setFilters({ city: '', locality: '', type: '', status: defaultStatus, min_price: '', max_price: '', no_of_bedroom: '', search: '' })
     setPage(1) 
   }
   const [page, setPage] = useState(1)
@@ -204,24 +209,30 @@ export default function Marketplace() {
         </div>
       </div>
 
-      <div className="card" style={{ padding: '32px', marginBottom: 48 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 20, alignItems: 'flex-end' }}>
+      <div className="card" style={{ padding: '40px', marginBottom: 48 }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+          gap: '32px 40px', 
+          alignItems: 'flex-end' 
+        }}>
+          {/* Group 1: Identity & Parameters */}
           <div className="form-group">
-            <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.05em', marginBottom: 10, display: 'block' }}>WHERE</label>
+            <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.1em', marginBottom: 12, display: 'block' }}>WHERE</label>
             <input
               type="text"
               className="form-control"
-              style={{ height: 48, borderRadius: 12 }}
-              placeholder="Search destinations"
+              style={{ height: 50, borderRadius: 12, width: '100%' }}
+              placeholder="Search destinations..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
           <div className="form-group">
-            <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.05em', marginBottom: 10, display: 'block' }}>TYPE</label>
+            <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.1em', marginBottom: 12, display: 'block' }}>TYPE</label>
             <select
               className="form-control"
-              style={{ height: 48, borderRadius: 12 }}
+              style={{ height: 50, borderRadius: 12, width: '100%' }}
               value={filters.type}
               onChange={e => setFilters({ ...filters, type: e.target.value })}
             >
@@ -230,10 +241,10 @@ export default function Marketplace() {
             </select>
           </div>
           <div className="form-group">
-            <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.05em', marginBottom: 10, display: 'block' }}>BHK</label>
+            <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.1em', marginBottom: 12, display: 'block' }}>BHK</label>
             <select
               className="form-control"
-              style={{ height: 48, borderRadius: 12 }}
+              style={{ height: 50, borderRadius: 12, width: '100%' }}
               value={filters.no_of_bedroom}
               onChange={e => setFilters({ ...filters, no_of_bedroom: e.target.value })}
             >
@@ -241,18 +252,36 @@ export default function Marketplace() {
               {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} BHK</option>)}
             </select>
           </div>
+
+          {/* Group 2: Financials & Status */}
           <div className="form-group">
-            <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.05em', marginBottom: 10, display: 'block' }}>BUDGET</label>
+            <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.1em', marginBottom: 12, display: 'block' }}>BUDGET</label>
             <input
               type="number"
               className="form-control"
-              style={{ height: 48, borderRadius: 12 }}
+              style={{ height: 50, borderRadius: 12, width: '100%' }}
               placeholder="Max price"
               value={filters.max_price}
               onChange={e => setFilters({ ...filters, max_price: e.target.value })}
             />
           </div>
-          <button className="btn btn-primary" style={{ height: 48, borderRadius: 12, padding: '0 24px' }}>SEARCH</button>
+          <div className="form-group">
+            <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '0.1em', marginBottom: 12, display: 'block' }}>STATUS</label>
+            <select
+              className="form-control"
+              style={{ height: 50, borderRadius: 12, width: '100%' }}
+              value={filters.status}
+              onChange={e => setFilters({ ...filters, status: e.target.value })}
+            >
+              <option value="">All Statuses</option>
+              <option value="available">Available</option>
+              <option value="sold">Sold</option>
+              <option value="rented">Rented</option>
+            </select>
+          </div>
+          <button className="btn btn-primary" style={{ height: 50, borderRadius: 12, padding: '0 24px', width: '100%' }}>
+            SEARCH DIRECTORY
+          </button>
         </div>
       </div>
 
