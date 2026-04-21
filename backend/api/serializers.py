@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Owner, Agent, Buyer, Tenant, Property, Sale, Rent
+from .models import Owner, Agent, Buyer, Tenant, Property, Sale, Rent, Notification
 
 
 class OwnerSerializer(serializers.ModelSerializer):
@@ -197,3 +197,19 @@ class AgentRentalReportSerializer(serializers.Serializer):
     rating = serializers.DecimalField(max_digits=2, decimal_places=1)
     total_rentals = serializers.IntegerField()
     rents = RentSerializer(many=True)
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    property_address = serializers.CharField(source='property.address', read_only=True)
+    sender_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Notification
+        fields = '__all__'
+
+    def get_sender_name(self, obj):
+        from django.contrib.auth.models import User
+        try:
+            return User.objects.get(id=obj.sender_id).email
+        except:
+            return "Anonymous"

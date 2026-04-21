@@ -100,19 +100,19 @@ function SalesReport() {
                  <table>
                    <thead>
                      <tr>
+                       <th>DATE</th>
                        <th>ESTATE</th>
                        <th>ACQUIRER</th>
                        <th>VALUE</th>
-                       <th>DOM</th>
                      </tr>
                    </thead>
                     <tbody>
                       {agent.sales.map(s => (
                         <tr key={s.property}>
+                          <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{s.sale_date}</td>
                           <td style={{ color: 'var(--text-main)', fontWeight: 700 }}>{s.property_address}</td>
                           <td style={{ color: 'var(--text-muted)' }}>{s.buyer_name}</td>
                           <td style={{ color: 'var(--text-main)', fontWeight: 800, fontSize: '1.1rem' }}>{fmt(s.final_price)}</td>
-                          <td style={{ color: 'var(--text-muted)' }}>{s.days_on_market || '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -186,6 +186,7 @@ function RentalReport() {
                    <thead>
                      <tr>
                        <th>PROPERTY</th>
+                       <th>AREA</th>
                        <th>TENANT</th>
                        <th>YIELD</th>
                        <th>TENURE</th>
@@ -195,6 +196,7 @@ function RentalReport() {
                        {agent.rents.map(r => (
                          <tr key={r.id}>
                            <td style={{ color: 'var(--text-main)', fontWeight: 700 }}>{r.property_address}</td>
+                           <td style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{r.property_locality}</td>
                            <td style={{ color: 'var(--text-muted)' }}>{r.tenant_name}</td>
                            <td style={{ color: 'var(--text-main)', fontWeight: 800, fontSize: '1.1rem' }}>{fmt(r.monthly_rent)}<span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-muted)' }}>/mo</span></td>
                            <td style={{ color: 'var(--text-muted)' }}>{r.start_date.split('-')[0]} → {r.end_date.split('-')[0]}</td>

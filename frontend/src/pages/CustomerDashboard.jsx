@@ -11,14 +11,28 @@ const TYPE_ICONS = {
 
 function PropertyDetailModal({ property, onClose }) {
   const [detail, setDetail] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [sent, setSent] = useState(false)
+
+  const handleInquiry = async (type) => {
+    setBusy(true)
+    try {
+      await api.post(`/properties/${property.property_id}/inquire/`, { type })
+      setSent(true)
+    } catch (e) {
+      alert("Failed to send inquiry.")
+    } finally {
+      setBusy(false)
+    }
+  }
 
   useEffect(() => {
     api.get(`/properties/${property.property_id}/`).then(r => setDetail(r.data))
   }, [property.property_id])
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)' }}>
-      <div className="card" style={{ maxWidth: 800, padding: 0, overflow: 'hidden', animation: 'scaleIn 0.3s cubic-bezier(0.23, 1, 0.32, 1)' }}>
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
+      <div className="card" style={{ maxWidth: 800, width: '100%', maxHeight: '90vh', padding: 0, overflowY: 'auto', animation: 'scaleIn 0.3s cubic-bezier(0.23, 1, 0.32, 1)', position: 'relative' }}>
         {!detail ? (
           <div style={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" style={{ borderTopColor: 'var(--primary)' }} /></div>
         ) : (
@@ -53,13 +67,37 @@ function PropertyDetailModal({ property, onClose }) {
                  </div>
                  <div>
                     <h3 style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.05em', marginBottom: 12 }}>REPRESENTATIVE</h3>
-                    <div className="card" style={{ padding: 20 }}>
-                       <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.9rem' }}>{detail.agent?.name || 'Guwahati Direct'}</div>
-                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 16 }}>{detail.agent?.contact || 'Support Representative'}</div>
-                       <button className="btn btn-primary" style={{ width: '100%', fontSize: '0.75rem' }}>REQUEST BRIEFING</button>
-                    </div>
-                 </div>
-              </div>
+                     <div className="card" style={{ padding: 20 }}>
+                        <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.9rem' }}>{detail.agent?.name || 'Guwahati Direct'}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 16 }}>{detail.agent?.contact || 'Support Representative'}</div>
+                        
+                        {sent ? (
+                          <div style={{ background: 'rgba(74, 222, 128, 0.1)', color: '#166534', padding: '12px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 600, textAlign: 'center' }}>
+                            ✓ INQUIRY DISPATCHED
+                          </div>
+                        ) : (
+                          <div style={{ display: 'grid', gap: 10 }}>
+                            <button 
+                              className="btn btn-primary" 
+                              style={{ width: '100%', fontSize: '0.75rem' }}
+                              disabled={busy}
+                              onClick={() => handleInquiry('buy_request')}
+                            >
+                              BUY PROPERTY
+                            </button>
+                            <button 
+                              className="btn" 
+                              style={{ width: '100%', fontSize: '0.75rem', border: '1px solid var(--primary)', color: 'var(--primary)' }}
+                              disabled={busy}
+                              onClick={() => handleInquiry('rent_request')}
+                            >
+                              RENT PROPERTY
+                            </button>
+                          </div>
+                        )}
+                     </div>
+                  </div>
+               </div>
             </div>
           </>
         )}
@@ -100,7 +138,7 @@ export default function CustomerDashboard() {
   const [selected, setSelected] = useState(null)
   const [meta, setMeta] = useState({ cities: [], localities: [], types: [] })
   const [filters, setFilters] = useState({
-    city: 'Guwahati', locality: '', type: '', status: 'available',
+    city: '', locality: '', type: '', status: 'available',
     min_price: '', max_price: '', no_of_bedroom: '', search: ''
   })
   const [page, setPage] = useState(1)

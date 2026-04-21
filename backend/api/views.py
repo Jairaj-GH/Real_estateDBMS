@@ -3,13 +3,14 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db import connection, IntegrityError, DatabaseError
-from django.db.models import Q, Sum, Count
+from django.db.models import Q, Sum, Count, Max
 from django.contrib.auth.models import User
 
-from .models import Owner, Agent, Buyer, Tenant, Property, Sale, Rent
+from .models import Owner, Agent, Buyer, Tenant, Property, Sale, Rent, Notification
 from .serializers import (
     OwnerSerializer, AgentSerializer, BuyerSerializer, TenantSerializer,
     PropertySerializer, PropertyDetailSerializer, SaleSerializer, RentSerializer,
+    NotificationSerializer,
 )
 from .permissions import IsOfficeOrAdmin, IsAgentOrAdmin, IsAdminRole, IsAnyAuthenticatedRole
 from authentication.views import CurrentUserView
@@ -39,9 +40,13 @@ class PropertyListView(generics.ListAPIView):
         min_price = params.get('min_price')
         max_price = params.get('max_price')
         bedrooms = params.get('no_of_bedroom')
+        agent_id = params.get('agent_id')
         search = params.get('search')
 
-        if city:
+        if agent_id:
+            qs = qs.filter(agent_id=agent_id)
+
+        if city and city != 'All Cities':
             qs = qs.filter(city__icontains=city)
         if locality:
             qs = qs.filter(locality__icontains=locality)
@@ -61,7 +66,7 @@ class PropertyListView(generics.ListAPIView):
                 Q(locality__icontains=search) |
                 Q(city__icontains=search)
             )
-        return qs
+        return qs.order_by('-listed_date')
 
 
 class PropertyDetailView(generics.RetrieveAPIView):
@@ -502,6 +507,7 @@ class AnalyticsView(APIView):
                 'rental_count': rents.count(),
                 'revenue': float(rev),
                 'rating': float(agent.rating) if agent.rating else 0,
+                'achievements': agent.completed_deals,
             })
         agent_perf.sort(key=lambda x: x['revenue'], reverse=True)
 
@@ -620,3 +626,124 @@ class AnalyticsView(APIView):
             'recent_transactions': recent,
             'price_distribution': price_dist,
         })
+
+
+# ─── New Workflow Views ───────────────────────────────────────────────────
+
+class PropertyInquiryView(APIView):
+    permission_classes = [IsAuthenticated, IsAnyAuthenticatedRole]
+
+    def post(self, request, property_id):
+        try:
+            prop = Property.objects.get(property_id=property_id)
+        except Property.DoesNotExist:
+            return Response({'error': 'Property not found.'}, status=404)
+
+        inquiry_type = request.data.get('type') # 'buy_request' or 'rent_request'
+        if inquiry_type not in ('buy_request', 'rent_request'):
+            return Response({'error': 'Invalid inquiry type.'}, status=400)
+
+        # Create notification for the specific agent
+        agent_id = prop.agent.agent_id if prop.agent else None
+        
+        Notification.objects.create(
+            sender_id=request.user.id,
+            receiver_id=agent_id,
+            property=prop,
+            type=inquiry_type,
+            message=request.data.get('message', f"Inquiry for {prop.address}")
+        )
+        return Response({'message': 'Interest successfully registered.'})
+
+
+class NotificationListView(APIView):
+    permission_classes = [IsAuthenticated, IsAnyAuthenticatedRole]
+
+    def get(self, request):
+        role = get_user_role(request.user)
+        if role == 'agent':
+            try:
+                agent_id = request.user.profile.agent_id
+                qs = Notification.objects.filter(receiver_id=agent_id).order_by('-created_at')
+            except:
+                qs = Notification.objects.none()
+        elif role in ('office', 'admin'):
+            # Office sees deal closures
+            qs = Notification.objects.filter(type='deal_closed').order_by('-created_at')
+        else:
+            # Customer sees their own sent notifications
+            qs = Notification.objects.filter(sender_id=request.user.id).order_by('-created_at')
+        
+        return Response(NotificationSerializer(qs, many=True).data)
+
+
+class ConfirmTransactionView(APIView):
+    permission_classes = [IsAuthenticated, IsAgentOrAdmin]
+
+    def post(self, request, notification_id):
+        try:
+            notif = Notification.objects.get(id=notification_id)
+        except Notification.DoesNotExist:
+            return Response({'error': 'Request not found.'}, status=404)
+
+        if notif.status != 'pending':
+            return Response({'error': 'This request has already been processed.'}, status=400)
+
+        prop = notif.property
+        agent = prop.agent
+
+        from datetime import date
+        
+        try:
+            if notif.type == 'buy_request':
+                sender = User.objects.get(id=notif.sender_id)
+                buyer_m = Buyer.objects.aggregate(m=Max('buyer_id'))['m'] or 0
+                buyer, _ = Buyer.objects.get_or_create(
+                    email=sender.email,
+                    defaults={'name': sender.get_full_name() or sender.username, 'buyer_id': buyer_m + 1}
+                )
+                Sale.objects.create(
+                    property=prop,
+                    buyer=buyer,
+                    agent=agent,
+                    sale_date=date.today(),
+                    final_price=prop.listed_price,
+                    days_on_market=30
+                )
+            elif notif.type == 'rent_request':
+                sender = User.objects.get(id=notif.sender_id)
+                tenant_m = Tenant.objects.aggregate(m=Max('tenant_id'))['m'] or 0
+                tenant, _ = Tenant.objects.get_or_create(
+                    email=sender.email,
+                    defaults={'name': sender.get_full_name() or sender.username, 'tenant_id': tenant_m + 1}
+                )
+                Rent.objects.create(
+                    property=prop,
+                    tenant=tenant,
+                    agent=agent,
+                    start_date=date.today(),
+                    end_date=date.today().replace(year=date.today().year + 1),
+                    monthly_rent=prop.listed_price / 100
+                )
+
+            # Update Agent Achievement
+            agent.completed_deals += 1
+            agent.save()
+
+            # Mark notification as approved
+            notif.status = 'approved'
+            notif.save()
+
+            # Notify Office
+            Notification.objects.create(
+                sender_id=request.user.id,
+                receiver_id=None,
+                property=prop,
+                type='deal_closed',
+                message=f"Transaction finalized for {prop.address} by {agent.name}."
+            )
+
+            return Response({'message': 'Transaction finalized and registry updated.'})
+
+        except Exception as e:
+            return Response({'error': f"Processing failed: {str(e)}"}, status=500)

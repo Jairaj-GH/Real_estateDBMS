@@ -86,6 +86,70 @@ function MyAchievements({ data }) {
   )
 }
 
+function RequestsCenter({ onUpdate }) {
+  const [notifs, setNotifs] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchNotifs = () => {
+    setLoading(true)
+    api.get('/notifications/').then(r => { setNotifs(r.data); setLoading(false) })
+  }
+
+  useEffect(() => { fetchNotifs() }, [])
+
+  const handleApprove = async (id) => {
+    if(!window.confirm("Authorize this transaction and update the secure registry?")) return
+    try {
+      await api.post(`/notifications/${id}/confirm/`)
+      fetchNotifs()
+      onUpdate?.()
+    } catch (e) {
+      alert("Failed to finalize transaction: " + (e.response?.data?.error || "Unknown error"))
+    }
+  }
+
+  return (
+    <div style={{ animation: 'fadeIn 0.8s ease-out' }}>
+      <div style={{ marginBottom: 40 }}>
+        <h1 style={{ fontFamily: 'Inter, sans-serif', fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 800, color: 'var(--text-main)', marginBottom: 8, letterSpacing: '-0.04em' }}>Inquiry Feed</h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', fontWeight: 500 }}>Live property mandates and customer interest signals.</p>
+      </div>
+
+      <div style={{ display: 'grid', gap: 24 }}>
+        {loading ? <div className="spinner" /> : notifs.length === 0 ? (
+          <div className="card" style={{ padding: 60, textAlign: 'center' }}>
+            <p style={{ color: 'var(--text-muted)', fontWeight: 500 }}>No live inquiries currently detected in your feed.</p>
+          </div>
+        ) : notifs.map(n => (
+          <div key={n.id} className="card" style={{ padding: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+               <div style={{ padding: '16px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: 12, fontSize: '1.5rem' }}>
+                  {n.type === 'buy_request' ? '💰' : '🔑'}
+               </div>
+               <div>
+                  <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.1em', marginBottom: 4 }}>
+                    {n.type.toUpperCase().replace('_', ' ')} · {n.status.toUpperCase()}
+                  </div>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: 4 }}>{n.property_address}</h3>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>From: {n.sender_name}</p>
+               </div>
+            </div>
+            {n.status === 'pending' && (
+              <button 
+                className="btn btn-primary" 
+                onClick={() => handleApprove(n.id)}
+                style={{ height: 48, padding: '0 32px', fontSize: '0.8rem' }}
+              >
+                FINALIZE DEAL
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function MarkSold({ agentId, onUpdate }) {
   const [properties, setProperties] = useState([])
   const [buyers, setBuyers] = useState([])
@@ -95,9 +159,9 @@ function MarkSold({ agentId, onUpdate }) {
   const [msg, setMsg] = useState(null)
 
   useEffect(() => {
-    api.get('/properties/?status=available').then(r => setProperties(r.data.results || r.data))
+    api.get(`/properties/?status=available&agent_id=${agentId}`).then(r => setProperties(r.data.results || r.data))
     api.get('/buyers/').then(r => setBuyers(r.data.results || r.data))
-  }, [])
+  }, [agentId])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -133,7 +197,7 @@ function MarkSold({ agentId, onUpdate }) {
       setForm({ property: '', buyer: '', sale_date: new Date().toISOString().split('T')[0], final_price: '', days_on_market: '' })
       onUpdate?.()
       // Refresh available properties
-      api.get('/properties/?status=available').then(r => setProperties(r.data.results || r.data))
+      api.get(`/properties/?status=available&agent_id=${agentId}`).then(r => setProperties(r.data.results || r.data))
     } catch (e) {
       const d = e.response?.data
       let errMsg = 'Execution failed.'
@@ -223,9 +287,9 @@ function MarkRented({ agentId, onUpdate }) {
   const [msg, setMsg] = useState(null)
 
   useEffect(() => {
-    api.get('/properties/?status=available').then(r => setProperties(r.data.results || r.data))
+    api.get(`/properties/?status=available&agent_id=${agentId}`).then(r => setProperties(r.data.results || r.data))
     api.get('/tenants/').then(r => setTenants(r.data.results || r.data))
-  }, [])
+  }, [agentId])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -237,7 +301,7 @@ function MarkRented({ agentId, onUpdate }) {
       setMsg({ type: 'success', text: 'Charter agreement successfully secured.' })
       setForm({ property: '', tenant: '', start_date: new Date().toISOString().split('T')[0], end_date: '', monthly_rent: '' })
       onUpdate?.()
-      api.get('/properties/?status=available').then(r => setProperties(r.data.results || r.data))
+      api.get(`/properties/?status=available&agent_id=${agentId}`).then(r => setProperties(r.data.results || r.data))
     } catch (e) {
       const d = e.response?.data
       let errMsg = 'Charter rejected.'
@@ -323,6 +387,7 @@ export default function AgentDashboard() {
   return (
     <Routes>
       <Route index element={<AgentOverview data={data} />} />
+      <Route path="inquiries" element={<RequestsCenter onUpdate={loadData} />} />
       <Route path="sell" element={<MarkSold agentId={user.agent_id} onUpdate={loadData} />} />
       <Route path="rent" element={<MarkRented agentId={user.agent_id} onUpdate={loadData} />} />
       <Route path="transactions" element={<MyAchievements data={data} />} />

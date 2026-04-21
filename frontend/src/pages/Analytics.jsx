@@ -298,6 +298,7 @@ export default function Analytics() {
                 <th>SALES</th>
                 <th>RENTALS</th>
                 <th>REVENUE</th>
+                <th>ACHIEVEMENTS</th>
                 <th>RATING</th>
               </tr>
             </thead>
@@ -309,7 +310,15 @@ export default function Analytics() {
                   <td style={{ color: 'var(--text-muted)' }}>{a.sales_count}</td>
                   <td style={{ color: 'var(--text-muted)' }}>{a.rental_count}</td>
                   <td style={{ fontWeight: 800, color: 'var(--text-main)' }}>{fmtShort(a.revenue)}</td>
-                  <td>
+                  <td style={{ textAlign: 'center' }}>
+                     <span style={{ 
+                       background: 'var(--primary)', color: '#fff', 
+                       padding: '4px 12px', borderRadius: 20, fontSize: '0.7rem', 
+                       fontWeight: 800, letterSpacing: '0.05em' 
+                     }}>
+                       {a.achievements || 0}
+                     </span>
+                  </td>                  <td>
                     <span style={{
                       fontWeight: 800, fontSize: '0.75rem', padding: '3px 10px', borderRadius: 99,
                       background: a.rating >= 4 ? '#f0fdf4' : a.rating >= 3 ? '#fffbeb' : '#fef2f2',

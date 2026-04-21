@@ -9,10 +9,10 @@ const ROLE_REDIRECTS = {
   admin: '/admin' }
 
 const QUICK_LOGINS = [
-  { label: 'Office', email: 'office@realestate.com', icon: '🏢' },
-  { label: 'Agent', email: 'agent1@realestate.com', icon: '🤝' },
-  { label: 'Customer', email: 'buyer1@example.com', icon: '👤' },
-  { label: 'Admin', email: 'admin@realestate.com', icon: '🛡️' },
+  { label: 'Office', email: 'office@realestate.com', password: 'office123', icon: '🏢' },
+  { label: 'Agent', email: 'agent1@realestate.com', password: 'agent123', icon: '🤝' },
+  { label: 'Customer', email: 'buyer1@example.com', password: 'customer123', icon: '👤' },
+  { label: 'Admin', email: 'admin@realestate.com', password: 'admin123', icon: '🛡️' },
 ]
 
 const UserIcon = () => (
@@ -87,7 +87,23 @@ export default function Login() {
             {QUICK_LOGINS.map(role => (
               <button
                 key={role.label}
-                onClick={() => setEmail(role.email)}
+                onClick={async () => {
+                  setEmail(role.email)
+                  setPassword(role.password)
+                  // Optional: triggered immediate login if desired
+                  // However, filling the fields and letting user click Sign In is safer
+                  // But the user complained about 'not working', so let's make it instant.
+                  setError('')
+                  setLoading(true)
+                  try {
+                    const user = await login(role.email, role.password)
+                    navigate(ROLE_REDIRECTS[user.role] || '/marketplace')
+                  } catch (err) {
+                    setError('Demo login failed. Check if setup_demo.py was run.')
+                  } finally {
+                    setLoading(false)
+                  }
+                }}
                 type="button"
                 className="btn login-btn-jelly"
                 style={{
