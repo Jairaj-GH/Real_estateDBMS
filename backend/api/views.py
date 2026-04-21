@@ -6,10 +6,11 @@ from django.db import connection, IntegrityError, DatabaseError
 from django.db.models import Q, Sum, Count
 from django.contrib.auth.models import User
 
-from .models import Owner, Agent, Buyer, Tenant, Property, Sale, Rent
+from .models import Owner, Agent, Buyer, Tenant, Property, Sale, Rent, Inquiry
 from .serializers import (
     OwnerSerializer, AgentSerializer, BuyerSerializer, TenantSerializer,
     PropertySerializer, PropertyDetailSerializer, SaleSerializer, RentSerializer,
+    InquirySerializer,
 )
 from .permissions import IsOfficeOrAdmin, IsAgentOrAdmin, IsAdminRole, IsAnyAuthenticatedRole
 from authentication.views import CurrentUserView
@@ -46,7 +47,7 @@ class PropertyListView(generics.ListAPIView):
         if locality:
             qs = qs.filter(locality__icontains=locality)
         if property_type:
-            qs = qs.filter(property_type=property_type)
+            qs = qs.filter(type=property_type)
         if status_filter:
             qs = qs.filter(current_status=status_filter)
         if min_price:
@@ -620,3 +621,36 @@ class AnalyticsView(APIView):
             'recent_transactions': recent,
             'price_distribution': price_dist,
         })
+
+
+# ─── Inquiries (Interest) ───────────────────────────────────────────────────
+
+class InquiryCreateView(generics.CreateAPIView):
+    queryset = Inquiry.objects.all()
+    serializer_class = InquirySerializer
+    permission_classes = [IsAuthenticated, IsAnyAuthenticatedRole]
+
+    def perform_create(self, serializer):
+        # Auto-assign agent from property if not provided
+        property_id = self.request.data.get('property')
+        if property_id:
+            prop = Property.objects.get(pk=property_id)
+            serializer.save(agent=prop.agent)
+        else:
+            serializer.save()
+
+
+class AgentInquiryListView(generics.ListAPIView):
+    serializer_class = InquirySerializer
+    permission_classes = [IsAuthenticated, IsAgentOrAdmin]
+
+    def get_queryset(self):
+        try:
+            agent_id = self.request.user.profile.agent_id
+            print(f"DEBUG: Agent ID from profile: {agent_id}")
+            qs = Inquiry.objects.filter(agent_id=agent_id).order_by('-created_at')
+            print(f"DEBUG: Found {qs.count()} inquiries")
+            return qs
+        except Exception as e:
+            print(f"DEBUG: Error in get_queryset: {e}")
+            return Inquiry.objects.none()

@@ -298,6 +298,86 @@ function MarkRented({ agentId, onUpdate }) {
   )
 }
 
+function AgentNotifications() {
+  const [inquiries, setInquiries] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get('/notifications/').then(r => {
+      setInquiries(r.data.results || r.data)
+      setLoading(false)
+    })
+  }, [])
+
+  if (loading) return <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" /></div>
+
+  return (
+    <div style={{ animation: 'fadeIn 0.8s ease-out' }}>
+      <div style={{ marginBottom: 40 }}>
+        <h1 style={{ fontFamily: 'Inter, sans-serif', fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 800, color: 'var(--text-main)', marginBottom: 8, letterSpacing: '-0.04em' }}>Intelligence Leads</h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', fontWeight: 500 }}>Prospective clients interested in your listed portfolio.</p>
+      </div>
+
+      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24 }}>
+        {inquiries.length === 0 ? (
+          <div className="card" style={{ gridColumn: '1 / -1', padding: 80, textAlign: 'center' }}>
+            <div style={{ fontSize: '3rem', marginBottom: 20 }}>📬</div>
+            <h3 style={{ color: 'var(--text-main)', fontWeight: 800 }}>No Active Leads</h3>
+            <p style={{ color: 'var(--text-muted)' }}>Market interest will appear here as customers explore your properties.</p>
+          </div>
+        ) : (
+          inquiries.map(iq => (
+            <div className="card" key={iq.inquiry_id} style={{ padding: 32, borderLeft: `4px solid ${iq.inquiry_type === 'buy' ? 'var(--primary)' : 'var(--accent)'}` }}>
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                 <div>
+                   <div style={{ fontSize: '0.65rem', fontWeight: 800, color: iq.inquiry_type === 'buy' ? 'var(--primary)' : 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>{iq.inquiry_type} REQUEST</div>
+                   <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>{iq.customer_name}</h3>
+                 </div>
+                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>{new Date(iq.created_at).toLocaleDateString()}</div>
+               </div>
+               
+               {iq.inquiry_type === 'rent' && iq.monthly_rent && (
+                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20, padding: 16, background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: 12 }}>
+                    <div>
+                       <div style={{ fontSize: '0.7rem', color: '#92400e', fontWeight: 700, marginBottom: 4 }}>PROPOSED RENT</div>
+                       <div style={{ fontWeight: 800, color: '#92400e', fontSize: '1.1rem' }}>{fmt(iq.monthly_rent)}/mo</div>
+                    </div>
+                    <div>
+                       <div style={{ fontSize: '0.7rem', color: '#92400e', fontWeight: 700, marginBottom: 4 }}>DURATION</div>
+                       <div style={{ fontSize: '0.85rem', color: '#92400e', fontWeight: 600 }}>{iq.start_date} to {iq.end_date}</div>
+                    </div>
+                 </div>
+               )}
+               
+               <div style={{ marginBottom: 20, padding: 16, borderRadius: 12, background: '#f8fafc' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: 4 }}>PROPERTY OF INTEREST</div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>{iq.property_address}</div>
+               </div>
+
+               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+                 <div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: 4 }}>EMAIL</div>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', fontWeight: 500 }}>{iq.customer_email}</div>
+                 </div>
+                 <div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: 4 }}>PHONE</div>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--text-main)', fontWeight: 500 }}>{iq.customer_phone || 'Not provided'}</div>
+                 </div>
+               </div>
+
+               {iq.message && (
+                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic', borderTop: '1px solid #eee', paddingTop: 16 }}>
+                    "{iq.message}"
+                 </div>
+               )}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function AgentDashboard() {
   const { user } = useAuth()
   const [data, setData] = useState(null)
@@ -326,6 +406,7 @@ export default function AgentDashboard() {
       <Route path="sell" element={<MarkSold agentId={user.agent_id} onUpdate={loadData} />} />
       <Route path="rent" element={<MarkRented agentId={user.agent_id} onUpdate={loadData} />} />
       <Route path="transactions" element={<MyAchievements data={data} />} />
+      <Route path="notifications" element={<AgentNotifications />} />
       <Route path="*" element={<Navigate to="" replace />} />
     </Routes>
   )

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import api from '../api/axios'
+import { useAuth } from '../context/AuthContext'
 import p1 from '../assets/p1.png'
 import p2 from '../assets/p2.png'
 import p3 from '../assets/p3.png'
@@ -14,10 +15,41 @@ const TYPE_ICONS = {
 
 function PropertyDetailModal({ property, onClose }) {
   const [detail, setDetail] = useState(null)
+  const [inquiryType, setInquiryType] = useState(null) // 'buy' or 'rent'
+  const [msg, setMsg] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
+  const { user } = useAuth()
 
   useEffect(() => {
     api.get(`/properties/${property.property_id}/`).then(r => setDetail(r.data))
   }, [property.property_id])
+
+  const submitInquiry = async (e) => {
+    e.preventDefault()
+    setSubmitting(true)
+    const formData = new FormData(e.target)
+    const payload = {
+      property: property.property_id,
+      inquiry_type: inquiryType,
+      customer_name: formData.get('name'),
+      customer_email: formData.get('email'),
+      customer_phone: formData.get('phone'),
+      message: formData.get('message'),
+      start_date: formData.get('start_date'),
+      end_date: formData.get('end_date'),
+      monthly_rent: formData.get('monthly_rent_val'),
+    }
+    try {
+      await api.post('/inquiries/', payload)
+      setMsg('Your interest has been successfully recorded. The agent will contact you shortly.')
+      setTimeout(() => { setInquiryType(null); setMsg(null); onClose() }, 3000)
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || err.response?.data?.detail || 'Failed to submit interest. Please try again.'
+      setMsg(errorMsg)
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   if (!detail) return (
     <div className="modal-overlay" style={{ background: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(10px)' }}>
@@ -27,8 +59,8 @@ function PropertyDetailModal({ property, onClose }) {
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)' }}>
-      <div className="modal card" onClick={e => e.stopPropagation()} style={{ maxWidth: 1000, borderRadius: 32 }}>
-        <div className="modal-header" style={{ padding: '24px 40px', borderBottom: '1px solid rgba(0,0,0,0.05)', background: 'transparent' }}>
+      <div className="modal card" onClick={e => e.stopPropagation()} style={{ maxWidth: 1000, borderRadius: 32, overflowY: 'auto', maxHeight: '90vh' }}>
+        <div className="modal-header" style={{ padding: '24px 40px', borderBottom: '1px solid rgba(0,0,0,0.05)', background: 'transparent', position: 'sticky', top: 0, zIndex: 10, background: '#fff' }}>
           <h2 style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.5rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>Property Details</h2>
           <button className="btn" onClick={onClose} style={{ padding: 8, minWidth: 40, height: 40, borderRadius: '50%' }}>✕</button>
         </div>
@@ -56,9 +88,79 @@ function PropertyDetailModal({ property, onClose }) {
                 </div>
               </div>
 
-              <div style={{ fontSize: '0.95rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                {detail.description || 'Seamlessly integrated within its prestigious surroundings, this asset offers unrivaled elegance.'}
-              </div>
+              {detail.agent && (
+                <div style={{ padding: 24, borderRadius: 20, background: '#f8fafc', border: '1px solid #e2e8f0', marginBottom: 32 }}>
+                   <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: 16 }}>LISTING AGENT</div>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>{detail.agent.name[0]}</div>
+                      <div>
+                        <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>{detail.agent.name}</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{detail.agent.email} · {detail.agent.contact}</div>
+                      </div>
+                   </div>
+                </div>
+              )}
+
+              {!inquiryType ? (
+                <div style={{ display: 'flex', gap: 16 }}>
+                  <button className="btn btn-primary" style={{ flex: 1, height: 56, fontSize: '1rem' }} onClick={() => setInquiryType('buy')}>I WANT TO BUY</button>
+                  <button className="btn" style={{ flex: 1, height: 56, fontSize: '1rem', border: '2px solid var(--primary)', color: 'var(--primary)' }} onClick={() => setInquiryType('rent')}>I WANT TO RENT</button>
+                </div>
+              ) : (
+                <div style={{ animation: 'slideUp 0.4s' }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                     <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>Inquire to {inquiryType === 'buy' ? 'Buy' : 'Rent'}</h3>
+                     <button className="btn" onClick={() => setInquiryType(null)} style={{ fontSize: '0.8rem', padding: '4px 12px' }}>Back</button>
+                   </div>
+                   
+                   {msg ? (
+                     <div style={{ padding: 20, borderRadius: 12, background: msg.includes('success') ? '#f0fdf4' : '#fef2f2', color: msg.includes('success') ? '#166534' : '#991b1b', fontWeight: 500 }}>{msg}</div>
+                   ) : (
+                     <form onSubmit={submitInquiry} style={{ display: 'grid', gap: 12 }}>
+                        <div style={{ padding: 16, background: '#fefce8', border: '1px solid #fef08a', borderRadius: 12, marginBottom: 8 }}>
+                           <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#854d0e', marginBottom: 4 }}>TOTAL PROPERTY VALUE</div>
+                           <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#854d0e' }}>{fmt(detail.listed_price)}</div>
+                        </div>
+
+                        <input name="name" className="form-control" placeholder="Your Name" defaultValue={user?.full_name} required />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                          <input name="email" className="form-control" placeholder="Email" defaultValue={user?.email} required />
+                          <input name="phone" className="form-control" placeholder="Phone" required />
+                        </div>
+
+                        {inquiryType === 'rent' && (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, animation: 'fadeIn 0.3s' }}>
+                            <div>
+                               <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>START DATE</label>
+                               <input type="date" name="start_date" className="form-control" required />
+                            </div>
+                            <div>
+                               <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>END DATE</label>
+                               <input type="date" name="end_date" className="form-control" required />
+                            </div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                               <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>AUTO-CALCULATED MONTHLY RENT (1% of Value)</label>
+                               <input 
+                                 type="text" 
+                                 name="monthly_rent" 
+                                 className="form-control" 
+                                 style={{ background: '#f1f5f9', fontWeight: 700 }}
+                                 value={fmt(detail.listed_price * 0.01)} 
+                                 readOnly 
+                               />
+                               <input type="hidden" name="monthly_rent_val" value={detail.listed_price * 0.01} />
+                            </div>
+                          </div>
+                        )}
+
+                        <textarea name="message" className="form-control" placeholder="Special requirements (optional)" style={{ minHeight: 80 }}></textarea>
+                        <button type="submit" className="btn btn-primary" style={{ height: 48 }} disabled={submitting}>
+                          {submitting ? 'SUBMITTING...' : 'SUBMIT INTEREST'}
+                        </button>
+                     </form>
+                   )}
+                </div>
+              )}
             </div>
           </div>
         </div>

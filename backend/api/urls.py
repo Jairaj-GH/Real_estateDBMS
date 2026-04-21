@@ -41,6 +41,10 @@ urlpatterns = [
     path('admin/sql/', views.AdminSQLView.as_view(), name='admin-sql'),
     path('admin/stats/', views.AdminStatsView.as_view(), name='admin-stats'),
     path('admin/tables/<str:table_name>/', views.AdminTableView.as_view(), name='admin-table'),
+    # Inquiries & Notifications
+    path('inquiries/', views.InquiryCreateView.as_view(), name='inquiry-create'),
+    path('notifications/', views.AgentInquiryListView.as_view(), name='agent-notifications'),
+
     path('admin/users/', views.AdminUserListCreateView.as_view(), name='admin-user-list'),
     path('admin/users/<int:user_id>/', views.AdminUserDetailView.as_view(), name='admin-user-detail'),
 ]

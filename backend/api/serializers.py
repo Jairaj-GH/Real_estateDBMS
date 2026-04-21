@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Owner, Agent, Buyer, Tenant, Property, Sale, Rent
+from .models import Owner, Agent, Buyer, Tenant, Property, Sale, Rent, Inquiry
 
 
 class OwnerSerializer(serializers.ModelSerializer):
@@ -197,3 +197,19 @@ class AgentRentalReportSerializer(serializers.Serializer):
     rating = serializers.DecimalField(max_digits=2, decimal_places=1)
     total_rentals = serializers.IntegerField()
     rents = RentSerializer(many=True)
+
+
+class InquirySerializer(serializers.ModelSerializer):
+    property_address = serializers.SerializerMethodField()
+    agent_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Inquiry
+        fields = '__all__'
+        read_only_fields = ['agent']
+
+    def get_property_address(self, obj):
+        return obj.property.address if obj.property else "N/A"
+
+    def get_agent_name(self, obj):
+        return obj.agent.name if obj.agent else "N/A"

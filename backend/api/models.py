@@ -22,7 +22,7 @@ class Owner(models.Model):
 class Agent(models.Model):
     agent_id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=50)
-    contact = models.CharField(max_length=15, db_column='phone', unique=True, blank=True, null=True)
+    contact = models.CharField(max_length=15, unique=True, blank=True, null=True)
     email = models.EmailField(max_length=50, unique=True, blank=True, null=True)
     rating = models.DecimalField(max_digits=2, decimal_places=1, blank=True, null=True)
 
@@ -112,3 +112,22 @@ class Rent(models.Model):
         db_table = 'rent'
         managed = False
         unique_together = (('property', 'tenant', 'start_date'),)
+
+
+class Inquiry(models.Model):
+    inquiry_id = models.AutoField(primary_key=True)
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, db_column='property_id')
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, db_column='agent_id')
+    customer_name = models.CharField(max_length=100)
+    customer_email = models.CharField(max_length=100)
+    customer_phone = models.CharField(max_length=15, blank=True, null=True)
+    inquiry_type = models.CharField(max_length=10) # 'buy' or 'rent'
+    message = models.TextField(blank=True, null=True)
+    start_date = models.DateField(blank=True, null=True)
+    end_date = models.DateField(blank=True, null=True)
+    monthly_rent = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        managed = False
+        db_table = 'inquiry'

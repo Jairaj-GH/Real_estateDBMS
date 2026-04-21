@@ -14,6 +14,7 @@ const NAV_CONFIG = {
   ],
   agent: [
     { label: 'My Briefing', icon: '📋', to: '/agent' },
+    { label: 'Intelligence Leads', icon: '📬', to: '/agent/notifications' },
     { label: 'Close Sale', icon: '✅', to: '/agent/sell' },
     { label: 'Register Rent', icon: '🔑', to: '/agent/rent' },
     { label: 'Achievements', icon: '🏆', to: '/agent/transactions' },
