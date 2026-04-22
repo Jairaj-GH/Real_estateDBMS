@@ -88,6 +88,49 @@ export default function Login() {
       justifyContent: 'center',
       position: 'relative'
     }}>
+      {/* About Us Button */}
+      <a 
+        href="/about.html" 
+        className="login-btn-jelly"
+        style={{
+          position: 'absolute',
+          top: '24px',
+          right: '24px',
+          padding: '10px 20px',
+          background: 'rgba(255, 255, 255, 0.1)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: '14px',
+          color: 'var(--text-main)',
+          textDecoration: 'none',
+          fontSize: '0.85rem',
+          fontWeight: 600,
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+        }}
+        onMouseOver={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+          e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)';
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 16v-4" />
+          <path d="M12 8h.01" />
+        </svg>
+        About Us
+      </a>
+
       {/* Login Card */}
       <div className="card" style={{ 
         width: '90%', 

@@ -1,0 +1,1840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Architecture & Vision — Real Estate DBMS</title>
+
+<!-- GSAP + ScrollTrigger -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<!-- Lenis smooth scroll -->
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.9/dist/lenis.min.js"></script>
+<!-- Simplex Noise -->
+<script src="https://cdn.jsdelivr.net/npm/simplex-noise@2.4.0/simplex-noise.js"></script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap');
+
+  :root {
+    --coral:    #FF385C;
+    --teal:     #00A699;
+    --violet:   #6B5CE7;
+    --violet2:  #8B5CF6;
+    --blue:     #3B82F6;
+    --green:    #10B981;
+    --green2:   #0CA789;
+    --pink:     #EC4899;
+    --amber:    #F59E0B;
+    --dark:     #484848;
+    --mid:      #767676;
+    --bg:       #06050f;
+    --glass-bg: rgba(255,255,255,0.04);
+    --glass-border: rgba(255,255,255,0.09);
+    --text: #f0eeff;
+    --text-sub: rgba(240,238,255,0.55);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: auto; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* ── Custom Cursor ──────────────────── */
+  #cursor-dot {
+    position: fixed; top: 0; left: 0; width: 8px; height: 8px;
+    background: var(--coral); border-radius: 50%;
+    pointer-events: none; z-index: 9999;
+    transform: translate(-50%,-50%);
+    transition: transform .1s, background .3s;
+  }
+  #cursor-ring {
+    position: fixed; top: 0; left: 0; width: 36px; height: 36px;
+    border: 1.5px solid rgba(255,56,92,0.55); border-radius: 50%;
+    pointer-events: none; z-index: 9998;
+    transform: translate(-50%,-50%);
+    transition: transform .18s cubic-bezier(.25,.46,.45,.94), opacity .3s;
+  }
+  body:hover #cursor-ring { opacity: 1; }
+
+  /* ── Three.js Canvas ───────────────── */
+  #bg-canvas {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0; pointer-events: none;
+  }
+
+  /* ── Layout ────────────────────────── */
+  .wrapper {
+    position: relative; z-index: 1;
+    max-width: 1180px; margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  /* ── Glass Card ─────────────────────── */
+  .glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border-radius: 20px;
+  }
+  .glass-sm { border-radius: 14px; }
+
+  /* ── Nav ──────────────────────────── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 18px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(6,5,15,0.6);
+    backdrop-filter: blur(24px);
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .nav-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.15rem; letter-spacing: -.01em;
+    background: linear-gradient(135deg, var(--coral), var(--violet));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .nav-links { display: flex; gap: 32px; }
+  .nav-links a {
+    color: var(--text-sub); font-size: .82rem; font-weight: 500;
+    text-decoration: none; letter-spacing: .04em; text-transform: uppercase;
+    transition: color .25s;
+  }
+  .nav-links a:hover { color: var(--text); }
+
+  /* ── Hero ─────────────────────────── */
+  #hero {
+    min-height: 100vh; display: flex; flex-direction: column;
+    justify-content: center; padding-top: 100px;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: rgba(107,92,231,0.15);
+    border: 1px solid rgba(107,92,231,0.3);
+    border-radius: 99px; padding: 6px 16px;
+    font-size: .72rem; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--violet2);
+    margin-bottom: 32px; width: fit-content;
+  }
+  .hero-eyebrow::before {
+    content: ''; display: block;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--violet2);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .4; transform: scale(1.4); }
+  }
+  .hero-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(3.2rem, 7vw, 7rem);
+    line-height: 1.04; letter-spacing: -.02em;
+    max-width: 820px;
+  }
+  .hero-title em {
+    font-style: italic;
+    background: linear-gradient(135deg, var(--coral) 0%, var(--violet) 50%, var(--teal) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero-sub {
+    margin-top: 28px; max-width: 580px;
+    color: var(--text-sub); font-size: 1.05rem;
+    font-weight: 400; line-height: 1.75;
+  }
+  .hero-cta {
+    margin-top: 48px; display: flex; gap: 16px; flex-wrap: wrap; align-items: center;
+  }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, var(--coral), #c9235b);
+    color: #fff; font-size: .88rem; font-weight: 700;
+    padding: 14px 28px; border-radius: 12px;
+    text-decoration: none; letter-spacing: .02em;
+    box-shadow: 0 4px 24px rgba(255,56,92,0.4);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(255,56,92,0.55); }
+  .hero-stats {
+    display: flex; gap: 40px; margin-top: 72px;
+    padding-top: 40px; border-top: 1px solid var(--glass-border);
+  }
+  .stat-item { display: flex; flex-direction: column; gap: 6px; }
+  .stat-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.4rem; letter-spacing: -.03em;
+    background: linear-gradient(135deg, #fff, var(--text-sub));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .stat-label { font-size: .72rem; color: var(--text-sub); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+
+  /* ── Section Headers ─────────────── */
+  section { padding: 120px 0; }
+  .section-tag {
+    display: inline-block;
+    font-size: .68rem; font-weight: 800; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--coral);
+    margin-bottom: 18px;
+  }
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    line-height: 1.1; letter-spacing: -.02em;
+    max-width: 600px; margin-bottom: 16px;
+  }
+  .section-sub {
+    color: var(--text-sub); font-size: .95rem; line-height: 1.8;
+    max-width: 520px; margin-bottom: 56px;
+  }
+
+  /* ── Tech Constellation ──────────── */
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .tech-card {
+    padding: 28px 28px 24px;
+    display: flex; flex-direction: column; gap: 16px;
+    transition: transform .3s cubic-bezier(.25,.46,.45,.94), border-color .3s;
+    position: relative; overflow: hidden;
+  }
+  .tech-card::before {
+    content: ''; position: absolute; inset: 0; opacity: 0;
+    transition: opacity .3s;
+    border-radius: inherit;
+  }
+  .tech-card:hover { transform: translateY(-5px); }
+  .tech-card:hover::before { opacity: 1; }
+  .tech-card:hover { border-color: rgba(255,255,255,0.18); }
+
+  .tech-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+  }
+  .tech-name { font-weight: 800; font-size: 1.05rem; letter-spacing: -.01em; }
+  .tech-version {
+    font-size: .7rem; font-weight: 700; padding: 3px 10px;
+    border-radius: 99px; border: 1px solid var(--glass-border);
+    color: var(--text-sub); background: rgba(255,255,255,0.04);
+    margin-left: 8px; vertical-align: middle;
+  }
+  .tech-desc { font-size: .82rem; color: var(--text-sub); line-height: 1.6; }
+  .tech-badge {
+    align-self: flex-start; font-size: .65rem; font-weight: 800;
+    letter-spacing: .08em; text-transform: uppercase;
+    padding: 4px 12px; border-radius: 99px;
+  }
+
+  /* ── Data Flow Timeline ──────────── */
+  .flow-track {
+    position: relative;
+    display: flex; align-items: flex-start; gap: 0;
+    overflow-x: auto; padding-bottom: 12px;
+  }
+  .flow-track::-webkit-scrollbar { height: 4px; }
+  .flow-track::-webkit-scrollbar-track { background: rgba(255,255,255,.05); border-radius: 2px; }
+  .flow-track::-webkit-scrollbar-thumb { background: rgba(107,92,231,.5); border-radius: 2px; }
+
+  .flow-step {
+    display: flex; flex-direction: column; align-items: center;
+    min-width: 165px; flex: 1;
+    position: relative;
+  }
+  .flow-connector {
+    position: absolute; top: 28px; left: 50%; right: -50%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--violet), rgba(107,92,231,0));
+    z-index: 0;
+  }
+  .flow-step:last-child .flow-connector { display: none; }
+
+  .flow-node {
+    width: 56px; height: 56px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; position: relative; z-index: 1;
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    transition: transform .3s, box-shadow .3s;
+    cursor: default;
+  }
+  .flow-node:hover { transform: scale(1.12); }
+  .flow-label {
+    margin-top: 14px; font-size: .78rem; font-weight: 700;
+    text-align: center; color: var(--text);
+    letter-spacing: .01em; line-height: 1.4;
+  }
+  .flow-sublabel {
+    margin-top: 5px; font-size: .68rem; color: var(--text-sub);
+    text-align: center; max-width: 130px; line-height: 1.5;
+  }
+  .flow-index {
+    margin-top: 10px; font-size: .62rem; font-weight: 800;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: var(--violet2); opacity: .7;
+  }
+
+  /* ── DB Schema ───────────────────── */
+  .schema-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .schema-card { padding: 22px 22px 18px; }
+  .schema-table-name {
+    font-size: .7rem; font-weight: 800; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--teal); margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .schema-table-name::before {
+    content: ''; display: block; width: 24px; height: 2px;
+    background: var(--teal); border-radius: 1px;
+  }
+  .schema-fields { display: flex; flex-direction: column; gap: 6px; }
+  .schema-field {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: .75rem; padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .schema-field:last-child { border-bottom: none; }
+  .field-name { color: var(--text); font-weight: 500; }
+  .field-type {
+    font-size: .62rem; font-weight: 700; letter-spacing: .04em;
+    color: var(--amber); background: rgba(245,158,11,0.1);
+    padding: 2px 8px; border-radius: 4px;
+  }
+  .field-pk { color: var(--coral) !important; }
+  .field-fk { color: var(--blue) !important; }
+
+  /* ── Design System ───────────────── */
+  .palette-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 40px; }
+  .swatch {
+    width: 80px; display: flex; flex-direction: column; gap: 8px;
+    cursor: default;
+  }
+  .swatch-block {
+    width: 80px; height: 80px; border-radius: 14px;
+    transition: transform .25s, box-shadow .25s;
+    box-shadow: 0 4px 20px rgba(0,0,0,.3);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .swatch:hover .swatch-block { transform: scale(1.08) translateY(-3px); }
+  .swatch-hex { font-size: .66rem; font-weight: 700; color: var(--text-sub); letter-spacing: .04em; }
+  .swatch-name { font-size: .65rem; color: rgba(240,238,255,.35); }
+
+  .type-scale { display: flex; flex-direction: column; gap: 20px; }
+  .type-row {
+    display: flex; align-items: baseline; gap: 24px;
+    padding: 16px 0; border-bottom: 1px solid var(--glass-border);
+  }
+  .type-row:last-child { border-bottom: none; }
+  .type-meta { min-width: 100px; font-size: .68rem; color: var(--text-sub); font-weight: 600; letter-spacing: .06em; }
+  .type-sample { flex: 1; }
+
+  /* ── Stack Overview Grid ─────────── */
+  .stack-split {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    margin-top: 0;
+  }
+  @media (max-width: 700px) {
+    .stack-split { grid-template-columns: 1fr; }
+    .hero-stats { flex-wrap: wrap; gap: 24px; }
+    .tech-grid { grid-template-columns: 1fr; }
+  }
+  .stack-col { padding: 32px; }
+  .stack-col h3 { font-family: 'DM Serif Display',serif; font-size: 1.5rem; margin-bottom: 20px; }
+  .stack-list { display: flex; flex-direction: column; gap: 12px; }
+  .stack-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 16px; border-radius: 12px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.06);
+    transition: background .2s, border-color .2s;
+  }
+  .stack-item:hover { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); }
+  .stack-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .stack-item-name { font-size: .85rem; font-weight: 600; }
+  .stack-item-sub { font-size: .72rem; color: var(--text-sub); margin-top: 2px; }
+
+  /* ── Footer ───────────────────────── */
+  footer {
+    padding: 60px 0; border-top: 1px solid var(--glass-border);
+    text-align: center;
+  }
+  footer p { font-size: .78rem; color: var(--text-sub); line-height: 1.8; }
+  .footer-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem; letter-spacing: -.02em;
+    background: linear-gradient(135deg, var(--coral), var(--violet), var(--teal));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+
+  /* ── Reveal animation init ────────── */
+  .reveal { opacity: 0; transform: translateY(36px); }
+  .reveal-left { opacity: 0; transform: translateX(-36px); }
+  .reveal-scale { opacity: 0; transform: scale(.93); }
+
+  /* ── Workflow Assembly Line ──────────── */
+  .workflow-track {
+    position: relative;
+    display: flex; align-items: stretch; gap: 0;
+    overflow-x: auto; padding: 16px 0 24px;
+    scrollbar-width: thin; scrollbar-color: rgba(107,92,231,.4) rgba(255,255,255,.05);
+  }
+  .workflow-track::-webkit-scrollbar { height: 4px; }
+  .workflow-track::-webkit-scrollbar-track { background: rgba(255,255,255,.05); border-radius: 2px; }
+  .workflow-track::-webkit-scrollbar-thumb { background: rgba(107,92,231,.5); border-radius: 2px; }
+  .wf-step {
+    display: flex; flex-direction: column; align-items: center;
+    min-width: 160px; flex: 1; position: relative; padding-bottom: 8px;
+  }
+  .wf-card {
+    background: rgba(15,25,45,0.3);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 25px 40px -15px rgba(0,0,0,0.4);
+    border-radius: 18px; padding: 24px 20px; width: 140px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    position: relative; z-index: 1;
+    transition: transform .3s, border-color .3s, box-shadow .3s;
+  }
+  .wf-card:hover { transform: translateY(-6px); border-color: rgba(255,255,255,0.22); }
+  .wf-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+  .wf-label { font-size: .8rem; font-weight: 800; text-align: center; }
+  .wf-sub { font-size: .68rem; color: var(--text-sub); text-align: center; line-height: 1.5; }
+  .wf-num { font-size: .6rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--violet2); opacity: .65; margin-top: 4px; }
+  .wf-connector-wrap { position: absolute; top: 40px; left: 50%; right: -50%; height: 2px; z-index: 0; display: flex; align-items: center; }
+  .wf-step:last-child .wf-connector-wrap { display: none; }
+  .wf-line { width: 100%; height: 2px; background: rgba(107,92,231,0.15); position: relative; overflow: hidden; border-radius: 1px; }
+  .wf-line-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--violet), var(--teal)); border-radius: 1px; transition: width 0.7s ease; }
+  .wf-line-fill.drawn { width: 100%; }
+
+  /* ── Tech Specs Section ─────────────── */
+  .specs-split { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  @media (max-width: 800px) { .specs-split { grid-template-columns: 1fr; } }
+  .spec-code-card { background: rgba(15,25,45,0.3); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 40px -15px rgba(0,0,0,0.4); border-radius: 20px; overflow: hidden; }
+  .spec-code-header { display: flex; align-items: center; gap: 10px; padding: 14px 22px; background: rgba(255,255,255,.025); border-bottom: 1px solid rgba(255,255,255,.08); }
+  .spec-code-title { font-size: .7rem; color: var(--text-sub); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-left: 4px; }
+  .spec-code-body { padding: 22px; font-family: 'JetBrains Mono','Fira Code',monospace; font-size: .76rem; line-height: 1.85; color: #a8b4d8; overflow-x: auto; }
+  .kw  { color: #6B5CE7; font-weight: 700; }
+  .str { color: #10B981; }
+  .com { color: rgba(168,180,216,.4); font-style: italic; }
+  .num { color: #F59E0B; }
+  .fn  { color: #EC4899; }
+  .pth { color: #00A699; }
+  .spec-right-card { background: rgba(15,25,45,0.3); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 40px -15px rgba(0,0,0,0.4); border-radius: 20px; padding: 32px; }
+  .spec-item { display: flex; gap: 18px; align-items: flex-start; padding: 18px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
+  .spec-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .spec-icon-wrap { width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+  .spec-text-title { font-size: .88rem; font-weight: 700; margin-bottom: 4px; }
+  .spec-text-sub { font-size: .75rem; color: var(--text-sub); line-height: 1.6; }
+  .spec-badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .spec-badge { font-size: .62rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 3px 10px; border-radius: 99px; }
+
+  /* ── Team Matrix ──────────────────── */
+  .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+  .team-card {
+    background: rgba(15,25,45,0.3); backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 40px -15px rgba(0,0,0,0.4);
+    border-radius: 20px; padding: 32px 28px;
+    display: flex; flex-direction: column; gap: 16px;
+    transition: transform .35s cubic-bezier(.34,1.56,.64,1), border-color .3s, box-shadow .3s;
+    position: relative; overflow: hidden;
+  }
+  .team-card::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 20%, var(--card-glow, rgba(107,92,231,0.08)), transparent 60%); pointer-events: none; border-radius: inherit; opacity: 0; transition: opacity .3s; }
+  .team-card:hover { transform: translateY(-8px) scale(1.01); border-color: rgba(255,255,255,0.2); box-shadow: 0 40px 60px -16px rgba(0,0,0,0.55); }
+  .team-card:hover::after { opacity: 1; }
+  .team-avatar { width: 64px; height: 64px; border-radius: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; align-self: flex-start; }
+  .team-avatar-inner { width: 100%; height: 100%; border-radius: inherit; display: flex; align-items: center; justify-content: center; font-family: 'DM Serif Display',serif; font-size: 1.5rem; }
+  .team-name { font-family: 'DM Serif Display', serif; font-size: 1.45rem; letter-spacing: -.02em; line-height: 1.1; }
+  .team-role { font-size: .68rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; margin-top: 2px; }
+  .team-domains { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .team-domain { font-size: .65rem; font-weight: 700; letter-spacing: .05em; padding: 4px 10px; border-radius: 99px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); color: var(--text-sub); }
+  .team-highlights { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+  .team-highlight { display: flex; gap: 10px; align-items: flex-start; font-size: .76rem; line-height: 1.5; color: var(--text-sub); }
+  .team-hl-arrow { color: var(--hl-c, var(--violet2)); font-size: .72rem; flex-shrink: 0; margin-top: 1px; }
+
+
+  /* ── Glow Orbs (CSS) ─────────────── */
+  .orb {
+    position: fixed; border-radius: 50%;
+    filter: blur(80px); pointer-events: none; z-index: 0;
+    animation: drift 18s ease-in-out infinite alternate;
+  }
+  .orb-1 { width: 600px; height: 600px; top: -200px; left: -200px; background: rgba(107,92,231,0.12); animation-duration: 20s; }
+  .orb-2 { width: 400px; height: 400px; bottom: 100px; right: -100px; background: rgba(255,56,92,0.1); animation-duration: 15s; animation-delay: -7s; }
+  .orb-3 { width: 300px; height: 300px; top: 40%; left: 60%; background: rgba(0,166,153,0.08); animation-duration: 22s; animation-delay: -12s; }
+  @keyframes drift {
+    0% { transform: translate(0,0); }
+    100% { transform: translate(40px, 40px); }
+  }
+
+  /* ── Query Showcase ──────────────── */
+  .query-showcase { margin-top: 40px; }
+  .query-card { padding: 0; overflow: hidden; }
+  .query-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 22px;
+    background: rgba(255,255,255,.03);
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .qdot { width: 10px; height: 10px; border-radius: 50%; }
+  .query-title { font-size: .75rem; color: var(--text-sub); font-weight: 600; margin-left: 4px; }
+  .query-body {
+    padding: 22px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: .8rem; line-height: 1.8;
+    color: #a8b4d8; overflow-x: auto;
+  }
+  .sql-kw { color: #6B5CE7; font-weight: 700; }
+  .sql-fn { color: #EC4899; }
+  .sql-str { color: #10B981; }
+  .sql-num { color: #F59E0B; }
+  .sql-cmt { color: rgba(168,180,216,.4); font-style: italic; }
+</style>
+</head>
+<body>
+
+<!-- Glow Orbs -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- Custom Cursor -->
+<div id="cursor-dot"></div>
+<div id="cursor-ring"></div>
+
+<!-- Three.js Canvas -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-logo">RealEstate<em style="font-style:italic">DBMS</em></div>
+  <div class="nav-links">
+    <a href="#tech">Stack</a>
+    <a href="#flow">Data Flow</a>
+    <a href="#schema">Schema</a>
+    <a href="#design">Design</a>
+    <a href="#workflow">Workflow</a>
+    <a href="#techspecs">Specs</a>
+    <a href="#team">Team</a>
+    <a href="/" style="color:var(--coral); font-weight: 800;">Sign In</a>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════ -->
+<section id="hero">
+  <div class="wrapper">
+    <div class="hero-eyebrow reveal">About This Website</div>
+    <h1 class="hero-title reveal">
+      Architecture<br/>&amp; <em>Vision</em>
+    </h1>
+    <p class="hero-sub reveal">
+      A full-stack real estate intelligence platform — uniting a React + Vite single-page application with a Django REST backend and a relational MySQL database to deliver live property analytics, SQL exploration, and market insights.
+    </p>
+    <div class="hero-cta reveal">
+      <a href="#tech" class="btn-primary">
+        <span>Explore the Stack</span>
+        <span>↓</span>
+      </a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item reveal">
+        <span class="stat-num">7</span>
+        <span class="stat-label">DB Tables</span>
+      </div>
+      <div class="stat-item reveal">
+        <span class="stat-num">3</span>
+        <span class="stat-label">Tier Architecture</span>
+      </div>
+      <div class="stat-item reveal">
+        <span class="stat-num">∞</span>
+        <span class="stat-label">SQL Queries</span>
+      </div>
+      <div class="stat-item reveal">
+        <span class="stat-num">₹</span>
+        <span class="stat-label">Indian Realty Market</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     TECH CONSTELLATION
+═══════════════════════════════════════════ -->
+<section id="tech">
+  <div class="wrapper">
+    <div class="section-tag reveal">Tech Constellation</div>
+    <h2 class="section-title reveal">Every tool, every layer</h2>
+    <p class="section-sub reveal">
+      Forensically extracted from the project repository — the exact frameworks, build tools, and runtime dependencies powering this platform.
+    </p>
+
+    <div class="tech-grid">
+
+      <!-- React -->
+      <div class="glass tech-card reveal-scale">
+        <div class="tech-icon" style="background:rgba(97,218,251,0.12);">⚛️</div>
+        <div>
+          <span class="tech-name">React</span>
+          <span class="tech-version">v18+</span>
+        </div>
+        <div class="tech-desc">Component-driven SPA. Uses <code style="color:var(--violet2);font-size:.78rem">useState</code>, <code style="color:var(--violet2);font-size:.78rem">useEffect</code>, <code style="color:var(--violet2);font-size:.78rem">useRef</code> hooks throughout every data-fetching view — dashboards, property tables, SQL console.</div>
+        <div class="tech-badge" style="background:rgba(97,218,251,0.1);color:#61DAFB;border:1px solid rgba(97,218,251,0.2);">Frontend</div>
+      </div>
+
+      <!-- Vite -->
+      <div class="glass tech-card reveal-scale">
+        <div class="tech-icon" style="background:rgba(189,52,254,0.12);">⚡</div>
+        <div>
+          <span class="tech-name">Vite</span>
+          <span class="tech-version">Build Tool</span>
+        </div>
+        <div class="tech-desc">Lightning-fast HMR build pipeline. Detected via <code style="color:var(--violet2);font-size:.78rem">vite.config.js</code> at frontend root, with <code style="color:var(--violet2);font-size:.78rem">package.json</code> confirming the React plugin setup.</div>
+        <div class="tech-badge" style="background:rgba(189,52,254,0.1);color:#BD34FE;border:1px solid rgba(189,52,254,0.2);">Build</div>
+      </div>
+
+      <!-- React Router -->
+      <div class="glass tech-card reveal-scale">
+        <div class="tech-icon" style="background:rgba(236,73,51,0.12);">🧭</div>
+        <div>
+          <span class="tech-name">React Router</span>
+          <span class="tech-version">DOM</span>
+        </div>
+        <div class="tech-desc">Client-side routing via <code style="color:var(--violet2);font-size:.78rem">useLocation</code> hooks detected in analytics views. Handles navigation between dashboard, property explorer, and admin SQL console.</div>
+        <div class="tech-badge" style="background:rgba(236,73,51,0.1);color:#EC4919;border:1px solid rgba(236,73,51,0.2);">Routing</div>
+      </div>
+
+      <!-- Django -->
+      <div class="glass tech-card reveal-scale">
+        <div class="tech-icon" style="background:rgba(9,128,76,0.12);">🐍</div>
+        <div>
+          <span class="tech-name">Django REST</span>
+          <span class="tech-version">Python</span>
+        </div>
+        <div class="tech-desc">Backend API layer. Models annotated with <code style="color:var(--green);font-size:.78rem">managed=False</code> — DRF acts as a transparent JSON bridge to the pre-existing MySQL schema without any ORM migrations.</div>
+        <div class="tech-badge" style="background:rgba(9,128,76,0.1);color:#0CA789;border:1px solid rgba(9,128,76,0.2);">Backend</div>
+      </div>
+
+      <!-- MySQL -->
+      <div class="glass tech-card reveal-scale">
+        <div class="tech-icon" style="background:rgba(0,117,143,0.15);">🐬</div>
+        <div>
+          <span class="tech-name">MySQL</span>
+          <span class="tech-version">DBPROJECT</span>
+        </div>
+        <div class="tech-desc">Relational database named <code style="color:var(--teal);font-size:.78rem">DBPROJECT</code>. Hosts 7 normalised tables: Owner, Agent, Buyer, Tenant, Property, Sale, and Rent. Full FK integrity enforced at DB level.</div>
+        <div class="tech-badge" style="background:rgba(0,117,143,0.1);color:#00A699;border:1px solid rgba(0,117,143,0.2);">Database</div>
+      </div>
+
+      <!-- Axios -->
+      <div class="glass tech-card reveal-scale">
+        <div class="tech-icon" style="background:rgba(83,172,245,0.12);">🔌</div>
+        <div>
+          <span class="tech-name">Axios</span>
+          <span class="tech-version">HTTP Client</span>
+        </div>
+        <div class="tech-desc">Custom <code style="color:var(--blue);font-size:.78rem">api/axios.js</code> instance with pre-configured base URL. Handles all REST calls: property fetches, analytics aggregations, and the live <code style="color:var(--blue);font-size:.78rem">POST /admin/sql/</code> endpoint.</div>
+        <div class="tech-badge" style="background:rgba(59,130,246,0.1);color:#3B82F6;border:1px solid rgba(59,130,246,0.2);">API Layer</div>
+      </div>
+
+      <!-- SQL Console -->
+      <div class="glass tech-card reveal-scale">
+        <div class="tech-icon" style="background:rgba(245,158,11,0.12);">🔬</div>
+        <div>
+          <span class="tech-name">SQL Console</span>
+          <span class="tech-version">Feature</span>
+        </div>
+        <div class="tech-desc">Live in-app SQL execution with query history, destructive-operation guards, and 10+ predefined analytical queries covering agents, rentals, property market insights across Indian cities like Guwahati.</div>
+        <div class="tech-badge" style="background:rgba(245,158,11,0.1);color:#F59E0B;border:1px solid rgba(245,158,11,0.2);">Feature</div>
+      </div>
+
+      <!-- Analytics Dashboard -->
+      <div class="glass tech-card reveal-scale">
+        <div class="tech-icon" style="background:rgba(16,185,129,0.12);">📊</div>
+        <div>
+          <span class="tech-name">Analytics Engine</span>
+          <span class="tech-version">Custom</span>
+        </div>
+        <div class="tech-desc">KPI cards, horizontal bar charts, and market trend visualisations. Currency formatted as ₹ INR (Crore / Lakh notation). Colors: <span style="color:var(--coral)">■</span> <span style="color:var(--teal)">■</span> <span style="color:var(--violet2)">■</span> extracted from component palette.</div>
+        <div class="tech-badge" style="background:rgba(16,185,129,0.1);color:#10B981;border:1px solid rgba(16,185,129,0.2);">UI Layer</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     DATA FLOW NARRATIVE
+═══════════════════════════════════════════ -->
+<section id="flow" style="overflow:hidden;">
+  <div class="wrapper">
+    <div class="section-tag reveal">Data Flow Narrative</div>
+    <h2 class="section-title reveal">Request to response</h2>
+    <p class="section-sub reveal">
+      The complete lifecycle of a data request — from the user's click in the browser to a row returned from MySQL and rendered as a ₹-formatted chart.
+    </p>
+
+    <div class="flow-track">
+      <!-- Step 1 -->
+      <div class="flow-step reveal">
+        <div class="flow-connector"></div>
+        <div class="flow-node glass" style="background:rgba(255,56,92,0.15);box-shadow:0 0 24px rgba(255,56,92,0.2);">👤</div>
+        <div class="flow-label">User</div>
+        <div class="flow-sublabel">Navigates to a dashboard route or types a SQL query</div>
+        <div class="flow-index">01</div>
+      </div>
+      <!-- Step 2 -->
+      <div class="flow-step reveal">
+        <div class="flow-connector"></div>
+        <div class="flow-node glass" style="background:rgba(97,218,251,0.12);box-shadow:0 0 24px rgba(97,218,251,0.15);">⚛️</div>
+        <div class="flow-label">React SPA</div>
+        <div class="flow-sublabel">Component mounts, <code style="color:var(--violet2)">useEffect</code> fires, UI state updates</div>
+        <div class="flow-index">02</div>
+      </div>
+      <!-- Step 3 -->
+      <div class="flow-step reveal">
+        <div class="flow-connector"></div>
+        <div class="flow-node glass" style="background:rgba(59,130,246,0.12);box-shadow:0 0 24px rgba(59,130,246,0.15);">🔌</div>
+        <div class="flow-label">Axios Client</div>
+        <div class="flow-sublabel">Custom instance sends <code style="color:var(--blue)">GET / POST</code> to Django API base URL</div>
+        <div class="flow-index">03</div>
+      </div>
+      <!-- Step 4 -->
+      <div class="flow-step reveal">
+        <div class="flow-connector"></div>
+        <div class="flow-node glass" style="background:rgba(9,128,76,0.12);box-shadow:0 0 24px rgba(9,128,76,0.2);">🐍</div>
+        <div class="flow-label">Django REST</div>
+        <div class="flow-sublabel">View receives request, queries ORM or raw SQL via <code style="color:var(--green)">managed=False</code> models</div>
+        <div class="flow-index">04</div>
+      </div>
+      <!-- Step 5 -->
+      <div class="flow-step reveal">
+        <div class="flow-connector"></div>
+        <div class="flow-node glass" style="background:rgba(0,117,143,0.15);box-shadow:0 0 24px rgba(0,166,153,0.2);">🐬</div>
+        <div class="flow-label">MySQL</div>
+        <div class="flow-sublabel">Schema <code style="color:var(--teal)">DBPROJECT</code> executes query, returns rows with JOINs &amp; aggregations</div>
+        <div class="flow-index">05</div>
+      </div>
+      <!-- Step 6 -->
+      <div class="flow-step reveal">
+        <div class="flow-connector"></div>
+        <div class="flow-node glass" style="background:rgba(245,158,11,0.12);box-shadow:0 0 24px rgba(245,158,11,0.15);">📦</div>
+        <div class="flow-label">JSON Response</div>
+        <div class="flow-sublabel">Serialised data travels back through Django REST serializers</div>
+        <div class="flow-index">06</div>
+      </div>
+      <!-- Step 7 -->
+      <div class="flow-step reveal">
+        <div class="flow-connector"></div>
+        <div class="flow-node glass" style="background:rgba(16,185,129,0.12);box-shadow:0 0 24px rgba(16,185,129,0.15);">📊</div>
+        <div class="flow-label">Charts &amp; KPIs</div>
+        <div class="flow-sublabel">React renders ₹-formatted KPI cards, bar charts, and data tables</div>
+        <div class="flow-index">07</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     DB SCHEMA
+═══════════════════════════════════════════ -->
+<section id="schema">
+  <div class="wrapper">
+    <div class="section-tag reveal">Database Schema</div>
+    <h2 class="section-title reveal">The relational backbone</h2>
+    <p class="section-sub reveal">
+      Seven tables in the <code style="color:var(--teal)">DBPROJECT</code> MySQL schema, faithfully mirrored as Django models with <code style="color:var(--teal)">managed=False</code>. FK constraints enforced at the DB layer.
+    </p>
+
+    <div class="schema-grid">
+      <div class="glass glass-sm schema-card reveal-scale">
+        <div class="schema-table-name">Property</div>
+        <div class="schema-fields">
+          <div class="schema-field"><span class="field-name field-pk">property_id</span><span class="field-type">PK INT</span></div>
+          <div class="schema-field"><span class="field-name">address</span><span class="field-type">VARCHAR</span></div>
+          <div class="schema-field"><span class="field-name">city</span><span class="field-type">VARCHAR</span></div>
+          <div class="schema-field"><span class="field-name">locality</span><span class="field-type">VARCHAR</span></div>
+          <div class="schema-field"><span class="field-name">type</span><span class="field-type">VARCHAR</span></div>
+          <div class="schema-field"><span class="field-name">size</span><span class="field-type">INT</span></div>
+          <div class="schema-field"><span class="field-name">no_of_bedroom</span><span class="field-type">INT</span></div>
+          <div class="schema-field"><span class="field-name">listed_price</span><span class="field-type">DECIMAL</span></div>
+          <div class="schema-field"><span class="field-name">current_status</span><span class="field-type">VARCHAR</span></div>
+          <div class="schema-field"><span class="field-name field-fk">owner_id</span><span class="field-type">FK INT</span></div>
+          <div class="schema-field"><span class="field-name field-fk">agent_id</span><span class="field-type">FK INT</span></div>
+        </div>
+      </div>
+      <div class="glass glass-sm schema-card reveal-scale">
+        <div class="schema-table-name">Owner</div>
+        <div class="schema-fields">
+          <div class="schema-field"><span class="field-name field-pk">owner_id</span><span class="field-type">PK INT</span></div>
+          <div class="schema-field"><span class="field-name">name</span><span class="field-type">VARCHAR(50)</span></div>
+          <div class="schema-field"><span class="field-name">phone</span><span class="field-type">VARCHAR(15)</span></div>
+          <div class="schema-field"><span class="field-name">email</span><span class="field-type">EMAIL</span></div>
+        </div>
+      </div>
+      <div class="glass glass-sm schema-card reveal-scale">
+        <div class="schema-table-name">Agent</div>
+        <div class="schema-fields">
+          <div class="schema-field"><span class="field-name field-pk">agent_id</span><span class="field-type">PK INT</span></div>
+          <div class="schema-field"><span class="field-name">name</span><span class="field-type">VARCHAR(50)</span></div>
+          <div class="schema-field"><span class="field-name">phone</span><span class="field-type">VARCHAR(15)</span></div>
+          <div class="schema-field"><span class="field-name">email</span><span class="field-type">EMAIL</span></div>
+          <div class="schema-field"><span class="field-name">rating</span><span class="field-type">DECIMAL(2,1)</span></div>
+        </div>
+      </div>
+      <div class="glass glass-sm schema-card reveal-scale">
+        <div class="schema-table-name">Buyer</div>
+        <div class="schema-fields">
+          <div class="schema-field"><span class="field-name field-pk">buyer_id</span><span class="field-type">PK INT</span></div>
+          <div class="schema-field"><span class="field-name">name</span><span class="field-type">VARCHAR(50)</span></div>
+          <div class="schema-field"><span class="field-name">phone</span><span class="field-type">VARCHAR(15)</span></div>
+          <div class="schema-field"><span class="field-name">email</span><span class="field-type">EMAIL</span></div>
+        </div>
+      </div>
+      <div class="glass glass-sm schema-card reveal-scale">
+        <div class="schema-table-name">Tenant</div>
+        <div class="schema-fields">
+          <div class="schema-field"><span class="field-name field-pk">tenant_id</span><span class="field-type">PK INT</span></div>
+          <div class="schema-field"><span class="field-name">name</span><span class="field-type">VARCHAR(50)</span></div>
+          <div class="schema-field"><span class="field-name">phone</span><span class="field-type">VARCHAR(15)</span></div>
+          <div class="schema-field"><span class="field-name">email</span><span class="field-type">EMAIL</span></div>
+        </div>
+      </div>
+      <div class="glass glass-sm schema-card reveal-scale">
+        <div class="schema-table-name">Sale</div>
+        <div class="schema-fields">
+          <div class="schema-field"><span class="field-name field-pk">property_id</span><span class="field-type">PK FK</span></div>
+          <div class="schema-field"><span class="field-name field-fk">buyer_id</span><span class="field-type">FK INT</span></div>
+          <div class="schema-field"><span class="field-name field-fk">agent_id</span><span class="field-type">FK INT</span></div>
+          <div class="schema-field"><span class="field-name">final_price</span><span class="field-type">DECIMAL</span></div>
+          <div class="schema-field"><span class="field-name">sale_date</span><span class="field-type">DATE</span></div>
+          <div class="schema-field"><span class="field-name">days_on_market</span><span class="field-type">INT</span></div>
+        </div>
+      </div>
+      <div class="glass glass-sm schema-card reveal-scale">
+        <div class="schema-table-name">Rent</div>
+        <div class="schema-fields">
+          <div class="schema-field"><span class="field-name field-pk">property_id</span><span class="field-type">PK FK</span></div>
+          <div class="schema-field"><span class="field-name field-fk">tenant_id</span><span class="field-type">FK INT</span></div>
+          <div class="schema-field"><span class="field-name">monthly_rent</span><span class="field-type">DECIMAL</span></div>
+          <div class="schema-field"><span class="field-name">lease_start</span><span class="field-type">DATE</span></div>
+          <div class="schema-field"><span class="field-name">lease_end</span><span class="field-type">DATE</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Query Showcase -->
+    <div class="query-showcase reveal">
+      <div class="section-tag" style="margin-top:60px;margin-bottom:16px;">Live Query Examples</div>
+      <div class="glass query-card">
+        <div class="query-header">
+          <div class="qdot" style="background:#FF5F57;"></div>
+          <div class="qdot" style="background:#FEBC2E;"></div>
+          <div class="qdot" style="background:#28C840;"></div>
+          <span class="query-title">SQL Console — Predefined Queries (extracted from source)</span>
+        </div>
+        <div class="query-body">
+<span class="sql-cmt">-- (a) Rented houses built after 2023 in Guwahati</span>
+<span class="sql-kw">SELECT</span> address, city, construction_year, current_status
+<span class="sql-kw">FROM</span> Property
+<span class="sql-kw">WHERE</span> city = <span class="sql-str">'Guwahati'</span>
+  <span class="sql-kw">AND</span> construction_year > <span class="sql-num">2023</span>
+  <span class="sql-kw">AND</span> current_status = <span class="sql-str">'rented'</span>;
+
+<span class="sql-cmt">-- (d) Top Agent by total sales in 2023</span>
+<span class="sql-kw">SELECT</span> a.name, <span class="sql-fn">SUM</span>(s.final_price) <span class="sql-kw">AS</span> total_sales_amount
+<span class="sql-kw">FROM</span> Agent a
+<span class="sql-kw">JOIN</span> Sale s <span class="sql-kw">ON</span> a.agent_id = s.agent_id
+<span class="sql-kw">WHERE</span> <span class="sql-fn">YEAR</span>(s.sale_date) = <span class="sql-num">2023</span>
+<span class="sql-kw">GROUP BY</span> a.agent_id, a.name
+<span class="sql-kw">ORDER BY</span> total_sales_amount <span class="sql-kw">DESC</span>
+<span class="sql-kw">LIMIT</span> <span class="sql-num">1</span>;
+
+<span class="sql-cmt">-- (c) Rentals on G.S Road — ≥2 BHK, under ₹15k/mo</span>
+<span class="sql-kw">SELECT</span> p.address, p.locality, p.no_of_bedroom, r.monthly_rent
+<span class="sql-kw">FROM</span> Property p
+<span class="sql-kw">JOIN</span> Rent r <span class="sql-kw">ON</span> p.property_id = r.property_id
+<span class="sql-kw">WHERE</span> p.city = <span class="sql-str">'Guwahati'</span>
+  <span class="sql-kw">AND</span> p.locality = <span class="sql-str">'G.S Road'</span>
+  <span class="sql-kw">AND</span> p.no_of_bedroom >= <span class="sql-num">2</span>
+  <span class="sql-kw">AND</span> r.monthly_rent < <span class="sql-num">15000</span>;
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     DESIGN SYSTEM
+═══════════════════════════════════════════ -->
+<section id="design">
+  <div class="wrapper">
+    <div class="section-tag reveal">Design System Integrity</div>
+    <h2 class="section-title reveal">Color &amp; type extracted<br/>from source</h2>
+    <p class="section-sub reveal">
+      The exact hex codes and font choices found across the React components — a deliberate palette built for data-dense dashboards with clear categorical differentiation.
+    </p>
+
+    <!-- Palette -->
+    <div class="glass" style="padding:36px;margin-bottom:24px;" class="reveal">
+      <div style="font-size:.72rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text-sub);margin-bottom:28px;">Primary Palette</div>
+      <div class="palette-row">
+        <div class="swatch reveal">
+          <div class="swatch-block" style="background:#FF385C;box-shadow:0 8px 24px rgba(255,56,92,0.4);"></div>
+          <div class="swatch-hex">#FF385C</div><div class="swatch-name">Coral</div>
+        </div>
+        <div class="swatch reveal">
+          <div class="swatch-block" style="background:#00A699;box-shadow:0 8px 24px rgba(0,166,153,0.35);"></div>
+          <div class="swatch-hex">#00A699</div><div class="swatch-name">Teal</div>
+        </div>
+        <div class="swatch reveal">
+          <div class="swatch-block" style="background:#6B5CE7;box-shadow:0 8px 24px rgba(107,92,231,0.4);"></div>
+          <div class="swatch-hex">#6B5CE7</div><div class="swatch-name">Violet</div>
+        </div>
+        <div class="swatch reveal">
+          <div class="swatch-block" style="background:#8B5CF6;box-shadow:0 8px 24px rgba(139,92,246,0.4);"></div>
+          <div class="swatch-hex">#8B5CF6</div><div class="swatch-name">Purple</div>
+        </div>
+        <div class="swatch reveal">
+          <div class="swatch-block" style="background:#3B82F6;box-shadow:0 8px 24px rgba(59,130,246,0.35);"></div>
+          <div class="swatch-hex">#3B82F6</div><div class="swatch-name">Blue</div>
+        </div>
+        <div class="swatch reveal">
+          <div class="swatch-block" style="background:#10B981;box-shadow:0 8px 24px rgba(16,185,129,0.35);"></div>
+          <div class="swatch-hex">#10B981</div><div class="swatch-name">Emerald</div>
+        </div>
+        <div class="swatch reveal">
+          <div class="swatch-block" style="background:#EC4899;box-shadow:0 8px 24px rgba(236,72,153,0.35);"></div>
+          <div class="swatch-hex">#EC4899</div><div class="swatch-name">Pink</div>
+        </div>
+        <div class="swatch reveal">
+          <div class="swatch-block" style="background:#F59E0B;box-shadow:0 8px 24px rgba(245,158,11,0.35);"></div>
+          <div class="swatch-hex">#F59E0B</div><div class="swatch-name">Amber</div>
+        </div>
+        <div class="swatch reveal">
+          <div class="swatch-block" style="background:#FC642D;box-shadow:0 8px 24px rgba(252,100,45,0.35);"></div>
+          <div class="swatch-hex">#FC642D</div><div class="swatch-name">Orange</div>
+        </div>
+        <div class="swatch reveal">
+          <div class="swatch-block" style="background:#484848;"></div>
+          <div class="swatch-hex">#484848</div><div class="swatch-name">Charcoal</div>
+        </div>
+      </div>
+
+      <!-- Type Scale -->
+      <div style="font-size:.72rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text-sub);margin-bottom:24px;margin-top:36px;">Typography Scale — Inter</div>
+      <div class="type-scale">
+        <div class="type-row reveal">
+          <div class="type-meta">7XL / 800</div>
+          <div class="type-sample" style="font-size:2.8rem;font-weight:800;letter-spacing:-.03em;line-height:1;">₹1.8 Cr</div>
+        </div>
+        <div class="type-row reveal">
+          <div class="type-meta">XL / 700</div>
+          <div class="type-sample" style="font-size:1.6rem;font-weight:700;letter-spacing:-.02em;">Dashboard KPI Value</div>
+        </div>
+        <div class="type-row reveal">
+          <div class="type-meta">LG / 800</div>
+          <div class="type-sample" style="font-size:1.1rem;font-weight:800;letter-spacing:-.01em;">Section / Card Title</div>
+        </div>
+        <div class="type-row reveal">
+          <div class="type-meta">SM / 500</div>
+          <div class="type-sample" style="font-size:.82rem;font-weight:500;color:var(--text-sub);">Descriptive body text for chart legends and metric labels</div>
+        </div>
+        <div class="type-row reveal">
+          <div class="type-meta">XS / 800 CAPS</div>
+          <div class="type-sample" style="font-size:.65rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--coral);">KPI Label · Badge · Category Tag</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stack Architecture -->
+    <div class="stack-split" style="margin-top:24px;">
+      <div class="glass stack-col reveal-left">
+        <h3>Frontend</h3>
+        <div class="stack-list">
+          <div class="stack-item">
+            <div class="stack-dot" style="background:#61DAFB;"></div>
+            <div><div class="stack-item-name">React 18</div><div class="stack-item-sub">Component lifecycle, Hooks, SPA</div></div>
+          </div>
+          <div class="stack-item">
+            <div class="stack-dot" style="background:#BD34FE;"></div>
+            <div><div class="stack-item-name">Vite</div><div class="stack-item-sub">Build tool, HMR, ESM</div></div>
+          </div>
+          <div class="stack-item">
+            <div class="stack-dot" style="background:var(--coral);"></div>
+            <div><div class="stack-item-name">React Router DOM</div><div class="stack-item-sub">Client-side routing, useLocation</div></div>
+          </div>
+          <div class="stack-item">
+            <div class="stack-dot" style="background:var(--blue);"></div>
+            <div><div class="stack-item-name">Axios (custom instance)</div><div class="stack-item-sub">api/axios.js — pre-configured base URL</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="glass stack-col reveal">
+        <h3>Backend &amp; Data</h3>
+        <div class="stack-list">
+          <div class="stack-item">
+            <div class="stack-dot" style="background:#0CA789;"></div>
+            <div><div class="stack-item-name">Django REST Framework</div><div class="stack-item-sub">Python API, managed=False models</div></div>
+          </div>
+          <div class="stack-item">
+            <div class="stack-dot" style="background:var(--teal);"></div>
+            <div><div class="stack-item-name">MySQL (DBPROJECT)</div><div class="stack-item-sub">7 tables, FK integrity, raw SQL</div></div>
+          </div>
+          <div class="stack-item">
+            <div class="stack-dot" style="background:var(--amber);"></div>
+            <div><div class="stack-item-name">Admin SQL Endpoint</div><div class="stack-item-sub">POST /admin/sql/ — live query exec</div></div>
+          </div>
+          <div class="stack-item">
+            <div class="stack-dot" style="background:var(--violet2);"></div>
+            <div><div class="stack-item-name">Git / GitHub</div><div class="stack-item-sub">Jairaj-GH/Real_estateDBMS, branch: Alok</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 4: DEVELOPMENT WORKFLOW
+═══════════════════════════════════════════ -->
+<section id="workflow">
+  <div class="wrapper">
+    <div class="section-tag reveal">Development Workflow</div>
+    <h2 class="section-title reveal">From commit to<br/><em style="font-family:'DM Serif Display',serif;font-style:italic;background:linear-gradient(135deg,var(--teal),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">deployment</em></h2>
+    <p class="section-sub reveal">
+      The assembly line that transforms raw feature code into a live, queryable platform — every stage verified against the project's git history and configuration files.
+    </p>
+
+    <div class="workflow-track" id="wf-track">
+
+      <!-- 1: Local Dev -->
+      <div class="wf-step">
+        <div class="wf-connector-wrap"><div class="wf-line"><div class="wf-line-fill" id="wfl-1"></div></div></div>
+        <div class="wf-card">
+          <div class="wf-icon" style="background:rgba(107,92,231,0.15);">🖥️</div>
+          <div class="wf-label">Local Dev</div>
+          <div class="wf-sub">Vite HMR + Django runserver on localhost</div>
+          <div class="wf-num">01</div>
+        </div>
+      </div>
+
+      <!-- 2: Version Control -->
+      <div class="wf-step">
+        <div class="wf-connector-wrap"><div class="wf-line"><div class="wf-line-fill" id="wfl-2"></div></div></div>
+        <div class="wf-card">
+          <div class="wf-icon" style="background:rgba(255,56,92,0.12);">🐙</div>
+          <div class="wf-label">Git / GitHub</div>
+          <div class="wf-sub">Jairaj-GH/Real_estateDBMS · branch: Alok</div>
+          <div class="wf-num">02</div>
+        </div>
+      </div>
+
+      <!-- 3: Code Review -->
+      <div class="wf-step">
+        <div class="wf-connector-wrap"><div class="wf-line"><div class="wf-line-fill" id="wfl-3"></div></div></div>
+        <div class="wf-card">
+          <div class="wf-icon" style="background:rgba(245,158,11,0.12);">🔍</div>
+          <div class="wf-label">Code Review</div>
+          <div class="wf-sub">Pull requests, forensic audit, security hardening</div>
+          <div class="wf-num">03</div>
+        </div>
+      </div>
+
+      <!-- 4: Build (Vite) -->
+      <div class="wf-step">
+        <div class="wf-connector-wrap"><div class="wf-line"><div class="wf-line-fill" id="wfl-4"></div></div></div>
+        <div class="wf-card">
+          <div class="wf-icon" style="background:rgba(189,52,254,0.12);">⚡</div>
+          <div class="wf-label">Vite Build</div>
+          <div class="wf-sub">ESM bundle, tree-shaking, asset optimisation</div>
+          <div class="wf-num">04</div>
+        </div>
+      </div>
+
+      <!-- 5: Django Collect -->
+      <div class="wf-step">
+        <div class="wf-connector-wrap"><div class="wf-line"><div class="wf-line-fill" id="wfl-5"></div></div></div>
+        <div class="wf-card">
+          <div class="wf-icon" style="background:rgba(9,128,76,0.12);">🐍</div>
+          <div class="wf-label">Django Prep</div>
+          <div class="wf-sub">collectstatic, migrate, gunicorn process</div>
+          <div class="wf-num">05</div>
+        </div>
+      </div>
+
+      <!-- 6: DB Migration -->
+      <div class="wf-step">
+        <div class="wf-connector-wrap"><div class="wf-line"><div class="wf-line-fill" id="wfl-6"></div></div></div>
+        <div class="wf-card">
+          <div class="wf-icon" style="background:rgba(0,117,143,0.15);">🐬</div>
+          <div class="wf-label">MySQL Schema</div>
+          <div class="wf-sub">schema.sql bootstraps DBPROJECT, seeds FK data</div>
+          <div class="wf-num">06</div>
+        </div>
+      </div>
+
+      <!-- 7: Live -->
+      <div class="wf-step">
+        <div class="wf-card">
+          <div class="wf-icon" style="background:rgba(16,185,129,0.12);">🚀</div>
+          <div class="wf-label">Deployed</div>
+          <div class="wf-sub">Live API + SPA serving real-estate market data</div>
+          <div class="wf-num">07</div>
+        </div>
+      </div>
+
+    </div><!-- /workflow-track -->
+
+    <!-- Workflow detail notes -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:40px;">
+      <div class="glass glass-sm reveal" style="padding:24px;">
+        <div style="font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin-bottom:12px;">Database-First Philosophy</div>
+        <p style="font-size:.82rem;color:var(--text-sub);line-height:1.7;">All models use <code style="color:var(--violet2)">managed=False</code> — Django never owns schema migrations. The SQL schema is the single source of truth, preserving full control over FK constraints, STRICT_TRANS_TABLES mode, and index definitions.</p>
+      </div>
+      <div class="glass glass-sm reveal" style="padding:24px;">
+        <div style="font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:12px;">CORS & Auth Layer</div>
+        <p style="font-size:.82rem;color:var(--text-sub);line-height:1.7;">django-cors-headers gates cross-origin requests from the Vite dev server. JWT tokens via <code style="color:var(--violet2)">django-simplejwt</code> are injected by a custom Axios interceptor into every API call, enabling stateless RBAC.</p>
+      </div>
+      <div class="glass glass-sm reveal" style="padding:24px;">
+        <div style="font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--coral);margin-bottom:12px;">Monorepo Structure</div>
+        <p style="font-size:.82rem;color:var(--text-sub);line-height:1.7;">Frontend (<code style="color:var(--violet2)">/frontend</code>) and backend (<code style="color:var(--violet2)">/backend</code>) coexist in a single repository. Vite's proxy config routes <code style="color:var(--teal)">/api/*</code> to Django during development, eliminating CORS friction locally.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 5: TECHNICAL SPECIFICATIONS
+═══════════════════════════════════════════ -->
+<section id="techspecs">
+  <div class="wrapper">
+    <div class="section-tag reveal">Technical Specifications</div>
+    <h2 class="section-title reveal">Architecture<br/><em style="font-family:'DM Serif Display',serif;font-style:italic;background:linear-gradient(135deg,var(--violet),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">decisions</em></h2>
+    <p class="section-sub reveal">
+      The critical architectural choices extracted from configuration files, schema constraints, and the forensic codebase audit — each decision deliberate, each tradeoff documented.
+    </p>
+
+    <div class="specs-split">
+
+      <!-- Left: Code aesthetic card -->
+      <div class="spec-code-card reveal-left">
+        <div class="spec-code-header">
+          <div class="qdot" style="background:#FF5F57;"></div>
+          <div class="qdot" style="background:#FEBC2E;"></div>
+          <div class="qdot" style="background:#28C840;"></div>
+          <span class="spec-code-title">settings.py — Core Config</span>
+        </div>
+        <div class="spec-code-body">
+<span class="com"># Database — single-user MySQL, utf8mb4</span>
+<span class="kw">DATABASES</span> = {
+  <span class="str">'default'</span>: {
+    <span class="str">'ENGINE'</span>: <span class="str">'django.db.backends.mysql'</span>,
+    <span class="str">'NAME'</span>: <span class="str">'DBPROJECT'</span>,
+    <span class="str">'USER'</span>: <span class="str">'root'</span>,
+    <span class="str">'OPTIONS'</span>: {
+      <span class="str">'charset'</span>: <span class="str">'utf8mb4'</span>,
+      <span class="str">'init_command'</span>: <span class="str">"SET sql_mode='STRICT_TRANS_TABLES'"</span>
+    }
+  }
+}
+
+<span class="com"># Auth — JWT + role-based permission classes</span>
+<span class="kw">REST_FRAMEWORK</span> = {
+  <span class="str">'DEFAULT_AUTHENTICATION_CLASSES'</span>: [
+    <span class="str">'rest_framework_simplejwt.authentication.JWTAuthentication'</span>
+  ],
+  <span class="str">'DEFAULT_PERMISSION_CLASSES'</span>: [
+    <span class="str">'rest_framework.permissions.IsAuthenticated'</span>
+  ]
+}
+
+<span class="com"># CORS — allow Vite dev server origin</span>
+<span class="kw">CORS_ALLOWED_ORIGINS</span> = [
+  <span class="str">'http://localhost:5173'</span>,
+]
+
+<span class="com"># Models — managed=False throughout</span>
+<span class="com"># Django never auto-migrates schema</span>
+<span class="com"># SQL schema.sql is ground truth</span>
+        </div>
+      </div>
+
+      <!-- Right: Architecture decision list -->
+      <div class="spec-right-card reveal">
+
+        <div class="spec-item">
+          <div class="spec-icon-wrap" style="background:rgba(107,92,231,0.12);">🔐</div>
+          <div>
+            <div class="spec-text-title">RBAC Permission Classes</div>
+            <div class="spec-text-sub">Four roles — <code style="color:var(--violet2)">admin</code>, <code style="color:var(--violet2)">office</code>, <code style="color:var(--violet2)">agent</code>, <code style="color:var(--violet2)">customer</code> — enforced via custom DRF permission classes. Sensitive endpoints like <code style="color:var(--teal)">/admin/sql/</code> are double-gated: IsAuthenticated + IsAdminRole.</div>
+            <div class="spec-badge-row">
+              <span class="spec-badge" style="background:rgba(107,92,231,0.12);color:var(--violet2);border:1px solid rgba(107,92,231,0.2);">JWT Auth</span>
+              <span class="spec-badge" style="background:rgba(255,56,92,0.1);color:var(--coral);border:1px solid rgba(255,56,92,0.2);">RBAC</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="spec-item">
+          <div class="spec-icon-wrap" style="background:rgba(16,185,129,0.1);">⚛️</div>
+          <div>
+            <div class="spec-text-title">ACID Transaction Wrapping</div>
+            <div class="spec-text-sub"><code style="color:var(--violet2)">transaction.atomic()</code> wraps the entire purchase flow: Sale INSERT → Owner upsert → Property status UPDATE → agent counter bump. Any failure triggers a full rollback, preventing orphaned Sale records.</div>
+            <div class="spec-badge-row">
+              <span class="spec-badge" style="background:rgba(16,185,129,0.1);color:#10B981;border:1px solid rgba(16,185,129,0.2);">Atomic</span>
+              <span class="spec-badge" style="background:rgba(0,166,153,0.1);color:var(--teal);border:1px solid rgba(0,166,153,0.2);">Rollback Safe</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="spec-item">
+          <div class="spec-icon-wrap" style="background:rgba(245,158,11,0.1);">🔒</div>
+          <div>
+            <div class="spec-text-title">8 MySQL Trigger Guards</div>
+            <div class="spec-text-sub">Rent overlap prevention via <code style="color:var(--violet2)">SIGNAL SQLSTATE '45000'</code>. AFTER INSERT triggers automate <code style="color:var(--teal)">current_status</code> transitions from <code style="color:var(--amber)">'available'</code> → <code style="color:var(--amber)">'sold'</code> / <code style="color:var(--amber)">'rented'</code>, eliminating manual status management.</div>
+            <div class="spec-badge-row">
+              <span class="spec-badge" style="background:rgba(245,158,11,0.1);color:var(--amber);border:1px solid rgba(245,158,11,0.2);">Triggers ×8</span>
+              <span class="spec-badge" style="background:rgba(236,72,153,0.1);color:var(--pink);border:1px solid rgba(236,72,153,0.2);">Overlap Guard</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="spec-item">
+          <div class="spec-icon-wrap" style="background:rgba(59,130,246,0.1);">🗄️</div>
+          <div>
+            <div class="spec-text-title">Composite Indices for Analytics</div>
+            <div class="spec-text-sub">Performance indices on high-query columns: <code style="color:var(--teal)">idx_property_city</code>, <code style="color:var(--teal)">idx_sale_date</code>, plus FK indices. The N+1 query pattern in SalesReportView (60 agents = 60 SELECTs) is flagged for future GROUP BY optimisation.</div>
+            <div class="spec-badge-row">
+              <span class="spec-badge" style="background:rgba(59,130,246,0.1);color:var(--blue);border:1px solid rgba(59,130,246,0.2);">Indexed</span>
+              <span class="spec-badge" style="background:rgba(107,92,231,0.12);color:var(--violet2);border:1px solid rgba(107,92,231,0.2);">MySQL InnoDB</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="spec-item">
+          <div class="spec-icon-wrap" style="background:rgba(252,100,45,0.1);">⚠️</div>
+          <div>
+            <div class="spec-text-title">Raw SQL Console — Risk & Mitigation</div>
+            <div class="spec-text-sub">AdminSQLView uses <code style="color:var(--violet2)">connection.cursor().execute(sql)</code> for arbitrary query execution. Mitigated by IsAdminRole gate + frontend guards blocking DROP/DELETE. Verbose error disclosure (<code style="color:var(--coral)">str(e)</code>) flagged for production masking.</div>
+            <div class="spec-badge-row">
+              <span class="spec-badge" style="background:rgba(255,56,92,0.1);color:var(--coral);border:1px solid rgba(255,56,92,0.2);">High Risk</span>
+              <span class="spec-badge" style="background:rgba(16,185,129,0.1);color:#10B981;border:1px solid rgba(16,185,129,0.2);">Admin Only</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- API Endpoints overview -->
+    <div class="glass reveal" style="padding:36px;margin-top:28px;">
+      <div style="font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text-sub);margin-bottom:24px;">API Endpoint Surface</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 16px;">
+          <div style="font-size:.65rem;font-weight:800;color:var(--teal);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;">Customer</div>
+          <code style="font-size:.72rem;color:#a8b4d8;line-height:1.9;display:block;">GET /api/properties/ — available listings<br/>POST /api/properties/{id}/inquire/ — notify agent<br/>GET /api/properties/{id}/ — detail view</code>
+        </div>
+        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 16px;">
+          <div style="font-size:.65rem;font-weight:800;color:var(--violet2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;">Agent</div>
+          <code style="font-size:.72rem;color:#a8b4d8;line-height:1.9;display:block;">GET /api/notifications/ — inbox<br/>POST /api/confirm/ — execute sale/rent<br/>GET /api/agent/transactions/ — row-level sales</code>
+        </div>
+        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 16px;">
+          <div style="font-size:.65rem;font-weight:800;color:var(--coral);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;">Admin</div>
+          <code style="font-size:.72rem;color:#a8b4d8;line-height:1.9;display:block;">GET /api/admin/stats/ — KPI dashboard<br/>POST /api/admin/sql/ — raw query exec<br/>GET /api/analytics/ — agent analytics</code>
+        </div>
+        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 16px;">
+          <div style="font-size:.65rem;font-weight:800;color:var(--amber);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;">Auth</div>
+          <code style="font-size:.72rem;color:#a8b4d8;line-height:1.9;display:block;">POST /api/token/ — obtain JWT pair<br/>POST /api/token/refresh/ — silent refresh<br/>POST /api/login/ — custom role resolver</code>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 6: TEAM COLLABORATION MATRIX
+═══════════════════════════════════════════ -->
+<section id="team">
+  <div class="wrapper">
+    <div class="section-tag reveal">Team &amp; Collaboration</div>
+    <h2 class="section-title reveal">Four engineers,<br/><em style="font-family:'DM Serif Display',serif;font-style:italic;background:linear-gradient(135deg,var(--coral),var(--amber));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">one system</em></h2>
+    <p class="section-sub reveal">
+      Functional ownership mapped from the codebase — each contributor's fingerprint visible in the git history, Django views, and React components they shaped.
+    </p>
+
+    <div class="team-grid">
+
+      <!-- ALOK -->
+      <div class="glass team-card team-reveal" style="--card-glow:rgba(255,56,92,0.1);">
+        <div class="team-avatar" style="background:rgba(255,56,92,0.15);">
+          <div class="team-avatar-inner" style="color:#FF385C;">A</div>
+        </div>
+        <div>
+          <div class="team-name">Alok</div>
+          <div class="team-role" style="color:var(--coral);">Schema Architect &amp; Analytics Core</div>
+        </div>
+        <div class="team-domains">
+          <span class="team-domain">Admin portal, Login page &amp; Analytics tab</span>
+          <span class="team-domain">Schema Design</span>
+          <span class="team-domain">Triggers &amp; Constraints</span>
+          <span class="team-domain">DB Population</span>
+        </div>
+        <div class="team-highlights">
+          <div class="team-highlight"><span class="team-hl-arrow" style="color:var(--coral);">→</span>Authored the complete DBPROJECT schema.sql: 7 tables, 8 triggers, 6 indices, full FK cascade map</div>
+          <div class="team-highlight"><span class="team-hl-arrow" style="color:var(--coral);">→</span>Implemented MySQL triggers for rent‑overlap prevention and automatic property status transitions</div>
+          <div class="team-highlight"><span class="team-hl-arrow" style="color:var(--coral);">→</span>Populated database with realistic Indian real‑estate data (Guwahati, G.S. Road) for performance testing</div>
+          <div class="team-highlight"><span class="team-hl-arrow" style="color:var(--coral);">→</span>Optimized analytics endpoints: identified N+1 query pattern in SalesReportView (60 agents → 60 SELECTs)</div>
+        </div>
+      </div>
+
+      <!-- JAI -->
+      <div class="glass team-card team-reveal" style="--card-glow:rgba(59,130,246,0.1);">
+        <div class="team-avatar" style="background:rgba(59,130,246,0.15);">
+          <div class="team-avatar-inner" style="color:#3B82F6;">J</div>
+        </div>
+        <div>
+          <div class="team-name">Jai</div>
+          <div class="team-role" style="color:var(--blue);">Project Architect &amp; ACID Guardian &amp; SQL Console</div>
+        </div>
+        <div class="team-domains">
+          <span class="team-domain">Initialisation</span>
+          <span class="team-domain">Office portal, Marketplace, Mock Login &amp; SQL Console</span>
+          <span class="team-domain">Transaction Logic Supervision</span>
+          <span class="team-domain">Isolation</span>
+        </div>
+        <div class="team-highlights">
+          <div class="team-highlight"><span class="team-hl-arrow" style="color:var(--blue);">→</span>Configured Django‑MySQL connection </div>
+          <div class="team-highlight"><span class="team-hl-arrow" style="color:var(--blue);">→</span>Implemented ACID‑compliant purchase flow using transaction.atomic() across Sale, Owner, Property updates</div>
+          <div class="team-highlight"><span class="team-hl-arrow" style="color:var(--blue);">→</span>Built Raw SQL Console (AdminSQLView) with cursor.execute() guarded by IsAdminRole permission</div>
+          <div class="team-highlight"><span class="team-hl-arrow" style="color:var(--blue);">→</span>Designed Office entity as a Django role — no schema migration, global visibility via Sale.objects.all()</div>
+          <div class="team-highlight"><span class="team-hl-arrow" style="color:var(--blue);">→</span>Allowed SQL injection for admin portal</div>
+        </div>
+      </div>
+
+      <!-- KUSHAGRA -->
+      <div class="glass team-card team-reveal" style="--card-glow:rgba(16,185,129,0.1);">
+        <div class="team-avatar" style="background:rgba(16,185,129,0.15);">
+          <div class="team-avatar-inner" style="color:#10B981;">K</div>
+        </div>
+        <div>
+          <div class="team-name">Kushagra</div>
+          <div class="team-role" style="color:#10B981;">Agent Portal &amp; Referential Integrity</div>
+        </div>
+        <div class="team-domains">
+          <span class="team-domain">Agent Portal</span>
+          <span class="team-domain">Transaction implementation &amp; FK Cascade Mgmt</span>
+          <span class="team-domain">Buyer→Owner Promotion</span>
+          <span class="team-domain">Row‑Level Security</span>
+        </div>
+        <div class="team-highlights">
+          <div class="team-highlight"><span class="team-hl-arrow" style="color:#10B981;">→</span>Enforced referential integrity via ON DELETE CASCADE on all foreign keys (Property, Sale, Rent)</div>
+          <div class="team-highlight"><span class="team-hl-arrow" style="color:#10B981;">→</span>Developed AgentMyTransactionsView with row‑level filtering: Sale.objects.filter(agent_id=agent_id)</div>
+          <div class="team-highlight"><span class="team-hl-arrow" style="color:#10B981;">→</span>Implemented Buyer‑to‑Owner promotion logic using get_or_create on email during transaction commit</div>
+          <div class="team-highlight"><span class="team-hl-arrow" style="color:#10B981;">→</span>Leveraged MySQL triggers (AFTER INSERT ON Sale) to automate current_status transition to 'sold'</div>
+        </div>
+      </div>
+
+      <!-- KUNAL -->
+      <div class="glass team-card team-reveal" style="--card-glow:rgba(139,92,246,0.1);">
+        <div class="team-avatar" style="background:rgba(139,92,246,0.15);">
+          <div class="team-avatar-inner" style="color:#8B5CF6;">K</div>
+        </div>
+        <div>
+          <div class="team-name">Kunal</div>
+          <div class="team-role" style="color:var(--violet2);">Customer Portal &amp; DB‑Aware UX</div>
+        </div>
+        <div class="team-domains">
+          <span class="team-domain">Customer Portal, Search panel &amp; Integrity</span>
+          <span class="team-domain">Parameterized Queries</span>
+          <span class="team-domain">UNIQUE Constraint UI</span>
+          <span class="team-domain">Inquiry Funnel</span>
+        </div>
+        <div class="team-highlights">
+          <div class="team-highlight"><span class="team-hl-arrow" style="color:var(--violet2);">→</span>Built marketplace with search filters that translate to SQL WHERE clauses on city, locality, price</div>
+          <div class="team-highlight"><span class="team-hl-arrow" style="color:var(--violet2);">→</span>Frontend validation against MySQL UNIQUE constraints (Buyer.phone, Buyer.email) to reduce IntegrityError</div>
+          <div class="team-highlight"><span class="team-hl-arrow" style="color:var(--violet2);">→</span>Implemented inquiry system that writes to Notification table without exposing raw SQL (ORM parameterization)</div>
+          <div class="team-highlight"><span class="team-hl-arrow" style="color:var(--violet2);">→</span>Real‑time UI sync with database status: "Buy Now" button disabled when current_status = 'sold'</div>
+        </div>
+      </div>
+
+    </div><!-- /team-grid -->
+  </div>
+</section>
+
+    <!-- Collaboration stats bar -->
+    <div class="glass reveal" style="padding:36px;margin-top:28px;">
+      <div style="font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text-sub);margin-bottom:28px;">Collective Output Metrics</div>
+      <div style="display:flex;flex-wrap:wrap;gap:48px;">
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-family:'DM Serif Display',serif;font-size:2.4rem;letter-spacing:-.03em;background:linear-gradient(135deg,#fff,var(--text-sub));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">8</span>
+          <span style="font-size:.72rem;color:var(--text-sub);font-weight:600;letter-spacing:.06em;text-transform:uppercase;">MySQL Triggers</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-family:'DM Serif Display',serif;font-size:2.4rem;letter-spacing:-.03em;background:linear-gradient(135deg,#fff,var(--text-sub));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">4</span>
+          <span style="font-size:.72rem;color:var(--text-sub);font-weight:600;letter-spacing:.06em;text-transform:uppercase;">Portal Roles</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-family:'DM Serif Display',serif;font-size:2.4rem;letter-spacing:-.03em;background:linear-gradient(135deg,#fff,var(--text-sub));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">12+</span>
+          <span style="font-size:.72rem;color:var(--text-sub);font-weight:600;letter-spacing:.06em;text-transform:uppercase;">API Endpoints</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-family:'DM Serif Display',serif;font-size:2.4rem;letter-spacing:-.03em;background:linear-gradient(135deg,#fff,var(--text-sub));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">1</span>
+          <span style="font-size:.72rem;color:var(--text-sub);font-weight:600;letter-spacing:.06em;text-transform:uppercase;">Atomic Purchase Flow</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-family:'DM Serif Display',serif;font-size:2.4rem;letter-spacing:-.03em;background:linear-gradient(135deg,#fff,var(--text-sub));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">∞</span>
+          <span style="font-size:.72rem;color:var(--text-sub);font-weight:600;letter-spacing:.06em;text-transform:uppercase;">SQL Queries Possible</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+<!-- ═══════════════════════════════════════════
+     SECTION: AI PROMPT USAGE CARDS
+═══════════════════════════════════════════ -->
+<section id="prompts">
+  <div class="wrapper">
+    <div class="section-tag reveal">Prompt Engineering</div>
+    <h2 class="section-title reveal">Building Real Estate DBMS<br/><em style="font-family:'DM Serif Display',serif;font-style:italic;background:linear-gradient(135deg,var(--coral),var(--violet2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">from Scratch</em></h2>
+    <p class="section-sub reveal">
+      The exact prompts used to bootstrap the database‑first architecture, Django REST layer, ACID workflows, and premium glassmorphic frontend — each one driving a critical component of the final system.
+    </p>
+
+    <!-- Phase 1 -->
+    <div class="phase-block reveal" style="margin-bottom: 48px;">
+      <div class="phase-header" style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+        <span class="phase-badge" style="background: var(--coral); color: #fff; padding: 4px 16px; border-radius: 99px; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;">Phase 1</span>
+        <span class="phase-title" style="font-size: 0.85rem; font-weight: 600; color: var(--text-sub); letter-spacing: 0.02em;">Database‑First Foundation</span>
+      </div>
+      <div class="prompt-grid" style="display: grid; grid-template-columns: 1fr; gap: 16px;">
+        <!-- Prompt Card 1 -->
+        <div class="glass prompt-card reveal-scale" style="padding: 28px 32px;">
+          <div style="display: flex; align-items: flex-start; gap: 20px;">
+            <div style="flex-shrink: 0; width: 40px; height: 40px; background: rgba(255,56,92,0.12); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">🐍</div>
+            <div style="flex:1;">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <span style="font-weight: 800; font-size: 0.9rem; letter-spacing: -0.01em;">Django Backend Initialization & ORM Bypass</span>
+                <span style="font-size: 0.6rem; font-weight: 700; padding: 2px 10px; border-radius: 99px; background: rgba(107,92,231,0.15); color: var(--violet2); letter-spacing: 0.06em;">managed=False</span>
+              </div>
+              <p style="font-size: 0.85rem; line-height: 1.7; color: var(--text-sub); margin: 0;">
+                "Initialize a new Django project (REST Framework). We are using a 'Database-first' approach. Create the Django <code style="color: var(--violet2); background: rgba(107,92,231,0.1); padding: 2px 6px; border-radius: 6px;">models.py</code> representations matching the SQL schema, but explicitly set <code style="color: var(--violet2); background: rgba(107,92,231,0.1); padding: 2px 6px; border-radius: 6px;">managed = False</code> for all models. We want Django to only act as an API bridge, not the database manager. Ensure connection settings map to our existing MySQL database."
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="phase-block reveal" style="margin-bottom: 48px;">
+      <div class="phase-header" style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+        <span class="phase-badge" style="background: var(--violet2); color: #fff; padding: 4px 16px; border-radius: 99px; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;">Phase 2</span>
+        <span class="phase-title" style="font-size: 0.85rem; font-weight: 600; color: var(--text-sub); letter-spacing: 0.02em;">Core Workflows & Logic</span>
+      </div>
+      <div class="prompt-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        <!-- Prompt Card 2 -->
+        <div class="glass prompt-card reveal-scale" style="padding: 24px;">
+          <div style="display: flex; align-items: flex-start; gap: 16px;">
+            <div style="flex-shrink: 0; width: 36px; height: 36px; background: rgba(0,166,153,0.12); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">🏠</div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <span style="font-weight: 800; font-size: 0.85rem;">Customer Marketplace API</span>
+              </div>
+              <p style="font-size: 0.78rem; line-height: 1.7; color: var(--text-sub); margin: 0;">
+                "Build the Customer exploration endpoints in Django. Create an API view (<code style="color: var(--teal); background: rgba(0,166,153,0.1); padding: 2px 6px; border-radius: 6px;">/api/properties/</code>) that queries the <code style="color: var(--teal);">Property</code> table for rows where <code style="color: var(--teal);">current_status = 'available'</code>. ... create a POST interaction point where a customer can submit an inquiry, generating a row in the <code style="color: var(--teal);">Notification</code> table assigned to the property's underlying Agent."
+              </p>
+            </div>
+          </div>
+        </div>
+        <!-- Prompt Card 3 -->
+        <div class="glass prompt-card reveal-scale" style="padding: 24px;">
+          <div style="display: flex; align-items: flex-start; gap: 16px;">
+            <div style="flex-shrink: 0; width: 36px; height: 36px; background: rgba(59,130,246,0.12); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">🤝</div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <span style="font-weight: 800; font-size: 0.85rem;">Agent Transaction & Deal APIs</span>
+              </div>
+              <p style="font-size: 0.78rem; line-height: 1.7; color: var(--text-sub); margin: 0;">
+                "Create the Agent Intelligence Hub endpoints. First, build a GET endpoint to return all <code style="color: var(--blue);">Notification</code> inquiries where <code style="color: var(--blue);">receiver_id</code> matches the authenticated Agent. Secondly, build a <code style="color: var(--blue);">ConfirmNotificationView</code> execution endpoint that securely inserts a record into the <code style="color: var(--blue);">Sale</code> or <code style="color: var(--blue);">Rent</code> table, and subsequently forces an <code style="color: var(--blue);">UPDATE</code> to change the corresponding property's status to 'sold' or 'rented'."
+              </p>
+            </div>
+          </div>
+        </div>
+        <!-- Prompt Card 4 -->
+        <div class="glass prompt-card reveal-scale" style="padding: 24px;">
+          <div style="display: flex; align-items: flex-start; gap: 16px;">
+            <div style="flex-shrink: 0; width: 36px; height: 36px; background: rgba(245,158,11,0.12); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">📊</div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <span style="font-weight: 800; font-size: 0.85rem;">High-Performance Database Analytics</span>
+              </div>
+              <p style="font-size: 0.78rem; line-height: 1.7; color: var(--text-sub); margin: 0;">
+                "Build an Analytics Engine API for the Office Administrator. Instead of pulling all data to Python, write complex aggregations and <code style="color: var(--amber);">GROUP BY</code> logic directly through MySQL inside the Django view (e.g., finding the top agent by SUM revenue, calculating average property turn-around time). Return only the compacted KPI numbers to save memory."
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="phase-block reveal">
+      <div class="phase-header" style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+        <span class="phase-badge" style="background: var(--green); color: #fff; padding: 4px 16px; border-radius: 99px; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;">Phase 3</span>
+        <span class="phase-title" style="font-size: 0.85rem; font-weight: 600; color: var(--text-sub); letter-spacing: 0.02em;">Premium Frontend Integration</span>
+      </div>
+      <div class="prompt-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        <!-- Prompt Card 5 -->
+        <div class="glass prompt-card reveal-scale" style="padding: 24px;">
+          <div style="display: flex; align-items: flex-start; gap: 16px;">
+            <div style="flex-shrink: 0; width: 36px; height: 36px; background: rgba(97,218,251,0.12); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">⚛️</div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <span style="font-weight: 800; font-size: 0.85rem;">React SPA Initialization & Glassmorphic UI</span>
+              </div>
+              <p style="font-size: 0.78rem; line-height: 1.7; color: var(--text-sub); margin: 0;">
+                "Initialize the frontend using React and Vite. Develop a globally accessible, highly premium 'Liquid Glass' UI (glassmorphic theme, deep purples, smooth modern typography, and hover micro-animations). Set up routing structure and create a foundational <code style="color: #61DAFB;">axios</code> API service interceptor to securely attach JWT tokens to every outbound HTTP request."
+              </p>
+            </div>
+          </div>
+        </div>
+        <!-- Prompt Card 6 -->
+        <div class="glass prompt-card reveal-scale" style="padding: 24px;">
+          <div style="display: flex; align-items: flex-start; gap: 16px;">
+            <div style="flex-shrink: 0; width: 36px; height: 36px; background: rgba(16,185,129,0.12); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">🎯</div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <span style="font-weight: 800; font-size: 0.85rem;">Customer & Agent Interface Development</span>
+              </div>
+              <p style="font-size: 0.78rem; line-height: 1.7; color: var(--text-sub); margin: 0;">
+                "Develop the primary React interfaces. First, build the <code style="color: var(--green);">/marketplace</code> page showcasing real-time fetched property cards with an elegant UI and 'Buy/Rent' buttons that dispatch the correct API payloads. Next, build an Agent Dashboard fetching the agent's notifications, complete with actionable buttons to finalize the real estate deals that communicate back to our Django endpoints."
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Small footnote -->
+    <p style="margin-top: 48px; font-size: 0.7rem; color: var(--text-sub); opacity: 0.6; text-align: center; letter-spacing: 0.05em;" class="reveal">
+      Each prompt executed via Antigravity & Claude— the system you see is the result of these exact instructions.
+    </p>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="wrapper">
+    <div class="footer-logo">RealEstate DBMS</div>
+    <p>
+      React + Vite &nbsp;·&nbsp; Django REST Framework &nbsp;·&nbsp; MySQL (DBPROJECT)<br/>
+      Forensically reconstructed from git object store &nbsp;·&nbsp; Built with ♥ in India
+    </p>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════ -->
+<script type="module">
+import * as THREE from 'https://unpkg.com/three@0.128.0/build/three.module.js';
+
+// ── Three.js Background ──────────────────────────────────
+const canvas = document.getElementById('bg-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.z = 28;
+
+// Particle field
+const N = 1400;
+const positions = new Float32Array(N * 3);
+const colors = new Float32Array(N * 3);
+const palette = [
+  new THREE.Color('#FF385C'),
+  new THREE.Color('#6B5CE7'),
+  new THREE.Color('#00A699'),
+  new THREE.Color('#3B82F6'),
+  new THREE.Color('#10B981'),
+  new THREE.Color('#EC4899'),
+];
+for (let i = 0; i < N; i++) {
+  positions[i*3]   = (Math.random() - 0.5) * 80;
+  positions[i*3+1] = (Math.random() - 0.5) * 60;
+  positions[i*3+2] = (Math.random() - 0.5) * 50;
+  const c = palette[Math.floor(Math.random() * palette.length)];
+  colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b;
+}
+const geo = new THREE.BufferGeometry();
+geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+const mat = new THREE.PointsMaterial({ size: 0.22, vertexColors: true, transparent: true, opacity: 0.55 });
+const points = new THREE.Points(geo, mat);
+scene.add(points);
+
+// Floating wireframe icosahedrons
+function makeWireOrb(radius, color, x, y, z) {
+  const g = new THREE.IcosahedronGeometry(radius, 1);
+  const m = new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 0.07 });
+  const mesh = new THREE.Mesh(g, m);
+  mesh.position.set(x, y, z);
+  scene.add(mesh);
+  return mesh;
+}
+const orb1 = makeWireOrb(7, 0x6B5CE7, -12, 4, -5);
+const orb2 = makeWireOrb(5, 0xFF385C,  14, -6, -8);
+const orb3 = makeWireOrb(4, 0x00A699,   2, 10, -12);
+
+// Mouse parallax
+let mx = 0, my = 0;
+document.addEventListener('mousemove', e => {
+  mx = (e.clientX / window.innerWidth  - 0.5) * 2;
+  my = (e.clientY / window.innerHeight - 0.5) * 2;
+});
+
+let scrollY = 0;
+window.addEventListener('scroll', () => { scrollY = window.scrollY; });
+
+let t = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  t += 0.004;
+
+  points.rotation.y = t * 0.06 + mx * 0.04;
+  points.rotation.x = t * 0.03 - my * 0.03;
+
+  orb1.rotation.x = t * 0.3; orb1.rotation.y = t * 0.2;
+  orb2.rotation.x = t * 0.2; orb2.rotation.z = t * 0.15;
+  orb3.rotation.y = t * 0.25; orb3.rotation.x = t * 0.1;
+
+  // Subtle mouse camera
+  camera.position.x += (mx * 1.5 - camera.position.x) * 0.04;
+  camera.position.y += (-my * 1.0 - camera.position.y) * 0.04;
+  camera.position.z = 28 - scrollY * 0.006;
+  camera.lookAt(scene.position);
+
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+
+<script>
+// ── Lenis Smooth Scroll ──────────────────────────────────
+const lenis = new Lenis({ duration: 1.3, easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
+function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+requestAnimationFrame(raf);
+
+// ── Custom Cursor ────────────────────────────────────────
+const dot  = document.getElementById('cursor-dot');
+const ring = document.getElementById('cursor-ring');
+let cx = 0, cy = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { cx = e.clientX; cy = e.clientY; });
+(function cursor() {
+  rx += (cx - rx) * 0.14;
+  ry += (cy - ry) * 0.14;
+  dot.style.left  = cx + 'px'; dot.style.top  = cy + 'px';
+  ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+  requestAnimationFrame(cursor);
+})();
+document.querySelectorAll('a,button,.tech-card,.flow-node,.swatch').forEach(el => {
+  el.addEventListener('mouseenter', () => { ring.style.transform = 'translate(-50%,-50%) scale(1.7)'; dot.style.transform = 'translate(-50%,-50%) scale(0.5)'; });
+  el.addEventListener('mouseleave', () => { ring.style.transform = 'translate(-50%,-50%) scale(1)';   dot.style.transform = 'translate(-50%,-50%) scale(1)'; });
+});
+
+// ── GSAP ScrollTrigger Reveals ───────────────────────────
+gsap.registerPlugin(ScrollTrigger);
+
+// Sync GSAP with Lenis
+lenis.on('scroll', ScrollTrigger.update);
+gsap.ticker.add(time => lenis.raf(time * 1000));
+gsap.ticker.lagSmoothing(0);
+
+gsap.utils.toArray('.reveal').forEach((el, i) => {
+  gsap.fromTo(el,
+    { opacity: 0, y: 40 },
+    { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', delay: (i % 4) * 0.07,
+      scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' }
+    }
+  );
+});
+gsap.utils.toArray('.reveal-left').forEach(el => {
+  gsap.fromTo(el,
+    { opacity: 0, x: -40 },
+    { opacity: 1, x: 0, duration: 1, ease: 'power3.out',
+      scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' }
+    }
+  );
+});
+gsap.utils.toArray('.reveal-scale').forEach((el, i) => {
+  gsap.fromTo(el,
+    { opacity: 0, scale: 0.88, y: 24 },
+    { opacity: 1, scale: 1, y: 0, duration: 0.8, ease: 'back.out(1.4)',
+      delay: (i % 4) * 0.06,
+      scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none none' }
+    }
+  );
+});
+
+// Flow nodes stagger
+const flowSteps = document.querySelectorAll('.flow-step');
+gsap.fromTo(flowSteps,
+  { opacity: 0, y: 30 },
+  { opacity: 1, y: 0, stagger: 0.12, duration: 0.75, ease: 'power3.out',
+    scrollTrigger: { trigger: '.flow-track', start: 'top 80%' }
+  }
+);
+
+// Swatch hover glow
+document.querySelectorAll('.swatch-block').forEach(sw => {
+  const color = sw.style.background;
+  sw.addEventListener('mouseenter', () => {
+    sw.style.boxShadow = `0 12px 36px ${color.replace('rgb','rgba').replace(')',',0.6)')}`;
+  });
+  sw.addEventListener('mouseleave', () => {
+    sw.style.boxShadow = `0 4px 20px rgba(0,0,0,.3)`;
+  });
+});
+
+// Hero counter animation
+const statNums = document.querySelectorAll('.stat-num');
+statNums.forEach(el => {
+  const val = el.textContent;
+  if (!isNaN(val)) {
+    gsap.fromTo(el, { textContent: 0 }, {
+      textContent: parseInt(val), duration: 1.8, ease: 'power2.out',
+      snap: { textContent: 1 }, delay: .5,
+      scrollTrigger: { trigger: el, start: 'top 90%', once: true }
+    });
+  }
+});
+
+// ── Workflow: draw connector lines on scroll ──────────
+const wfLines = document.querySelectorAll('.wf-line-fill');
+if (wfLines.length > 0) {
+  ScrollTrigger.create({
+    trigger: '#wf-track',
+    start: 'top 80%',
+    onEnter: () => {
+      wfLines.forEach((line, i) => {
+        setTimeout(() => line.classList.add('drawn'), i * 220);
+      });
+    }
+  });
+}
+
+// ── Workflow cards stagger ───────────────────────────
+const wfCards = document.querySelectorAll('.wf-card');
+gsap.fromTo(wfCards,
+  { opacity: 0, y: 36, scale: 0.92 },
+  { opacity: 1, y: 0, scale: 1, stagger: 0.1, duration: 0.7, ease: 'back.out(1.4)',
+    immediateRender: false,
+    scrollTrigger: { trigger: '#wf-track', start: 'top 82%', toggleActions: 'play none none none' }
+  }
+);
+
+// ── Team cards: elastic bounce stagger ───────────────
+const teamCards = document.querySelectorAll('.team-card');
+gsap.fromTo(teamCards,
+  { opacity: 0, y: 60, scale: 0.88 },
+  { opacity: 1, y: 0, scale: 1,
+    stagger: { each: 0.14, ease: 'power2.inOut' },
+    duration: 0.85, ease: 'back.out(1.6)',
+    immediateRender: false,
+    scrollTrigger: { trigger: '.team-grid', start: 'top 85%', toggleActions: 'play none none none' }
+  }
+);
+
+// ── Background color shift on scroll sections ─────────
+// Shift orb colors based on which section is active
+const orb1El = document.querySelector('.orb-1');
+const orb2El = document.querySelector('.orb-2');
+const orb3El = document.querySelector('.orb-3');
+
+ScrollTrigger.create({
+  trigger: '#workflow',
+  start: 'top 60%',
+  end: 'bottom 40%',
+  onEnter: () => {
+    gsap.to(orb1El, { background: 'rgba(0,166,153,0.13)', duration: 1.5, ease: 'power2.inOut' });
+    gsap.to(orb2El, { background: 'rgba(59,130,246,0.11)', duration: 1.5, ease: 'power2.inOut' });
+  },
+  onLeave: () => {
+    gsap.to(orb1El, { background: 'rgba(107,92,231,0.12)', duration: 1.5, ease: 'power2.inOut' });
+    gsap.to(orb2El, { background: 'rgba(255,56,92,0.10)', duration: 1.5, ease: 'power2.inOut' });
+  },
+  onEnterBack: () => {
+    gsap.to(orb1El, { background: 'rgba(0,166,153,0.13)', duration: 1.5, ease: 'power2.inOut' });
+  },
+  onLeaveBack: () => {
+    gsap.to(orb1El, { background: 'rgba(107,92,231,0.12)', duration: 1.5, ease: 'power2.inOut' });
+  }
+});
+
+ScrollTrigger.create({
+  trigger: '#team',
+  start: 'top 60%',
+  onEnter: () => {
+    gsap.to(orb1El, { background: 'rgba(107,92,231,0.15)', duration: 1.5, ease: 'power2.inOut' });
+    gsap.to(orb2El, { background: 'rgba(255,56,92,0.13)', duration: 1.5, ease: 'power2.inOut' });
+    gsap.to(orb3El, { background: 'rgba(245,158,11,0.09)', duration: 1.5, ease: 'power2.inOut' });
+  }
+});
+
+// ── Specs section: slide-in left/right ───────────────
+gsap.fromTo('.spec-code-card',
+  { opacity: 0, x: -50 },
+  { opacity: 1, x: 0, duration: 1, ease: 'power3.out',
+    immediateRender: false,
+    scrollTrigger: { trigger: '.specs-split', start: 'top 82%', toggleActions: 'play none none none' }
+  }
+);
+gsap.fromTo('.spec-right-card',
+  { opacity: 0, x: 50 },
+  { opacity: 1, x: 0, duration: 1, ease: 'power3.out',
+    immediateRender: false,
+    scrollTrigger: { trigger: '.specs-split', start: 'top 82%', toggleActions: 'play none none none' }
+  }
+);
+
+// Cursor hover extend to new cards
+document.querySelectorAll('.wf-card,.team-card,.spec-code-card,.spec-right-card').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    ring.style.transform = 'translate(-50%,-50%) scale(1.7)';
+    dot.style.transform  = 'translate(-50%,-50%) scale(0.5)';
+  });
+  el.addEventListener('mouseleave', () => {
+    ring.style.transform = 'translate(-50%,-50%) scale(1)';
+    dot.style.transform  = 'translate(-50%,-50%) scale(1)';
+  });
+});
+
+</script>
+</body>
+</html>
